@@ -30,6 +30,8 @@ This is the root of the tree. The eleven rules encode the conventions of one spe
 
 ### Answer to Q1
 
+I'd like to use it to clean any transcript. `format_transcription.py` works for anything script, but `format_advanced.py` applies specific rules. Indeed some of the rules in the current `format_advanced.py` script are specific to `coge-transcriptions` repo. So I think that fits in (c).
+
 ---
 
 ## Q2 - What exactly gets pasted or uploaded in?
@@ -44,6 +46,8 @@ Vibe can export several formats, including plain text and timestamped subtitle f
 
 ### Answer to Q2
 
+(a) indeed
+
 ---
 
 ## Q3 - English only?
@@ -57,6 +61,8 @@ The pronoun set in rule 8, the `Mr.` of rule 6, and the `And ` / `But ` / `Then 
 ➡️ Recommendation: **(a)**. (c) is the trap: the rules will not error on French input, they will quietly mangle it — rule 3 capitalises, rule 5 fires after `?`, rule 9 deduplicates, and the result looks plausible enough that you might not notice. If English is the answer, the UI should say it. (b) is a real second rule set and belongs in its own round if you want it.
 
 ### Answer to Q3
+
+(a)
 
 ---
 
@@ -74,6 +80,8 @@ Without rule 7, the app is pure deterministic string manipulation: it can be a s
 
 ### Answer to Q4
 
+you're right with recommendation
+
 ---
 
 ## Q5 - How is the result presented?
@@ -87,6 +95,8 @@ The scripts rewrite the file in place — after `format_advanced.py` runs, the o
 ➡️ Recommendation: **(a)**. These rules are lossy and occasionally wrong — rule 10 joins on `Then `, rule 11 truncates everything after a matched line, rule 9 deletes a paragraph — and you need the original in front of you to catch it. (b) makes a bad join undetectable. (c) is the most informative and is the natural v2, but a paragraph-level diff over text that has been deliberately re-paragraphed is a real piece of work; (a) gets you the same safety for a fraction of it.
 
 ### Answer to Q5
+
+let's stick to (a) and record (c) for v2 as a toggle feature.
 
 ---
 
@@ -102,6 +112,8 @@ Once you are happy with the output, what do you do with it?
 
 ### Answer to Q6
 
+(c)
+
 ---
 
 ## Q7 - What happens to the Python scripts?
@@ -116,3 +128,5 @@ If the webapp becomes the tool you actually use, `original-scripts/` becomes cod
 ➡️ Recommendation: **(a)**. One implementation to maintain, one to read the history from. (b) guarantees drift. (c) is seductive — genuinely one rule set — but it drags a multi-megabyte Python runtime into a page whose entire job is a handful of regexes and string joins, which is the opposite of the "tiny" in your README. (d) throws away the record of where the rules came from, and that record is worth keeping since several rules are non-obvious.
 
 ### Answer to Q7
+
+(a)
