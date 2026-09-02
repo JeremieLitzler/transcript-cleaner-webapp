@@ -42,12 +42,35 @@ A **preset** is a named set of level-2 rules with a default on/off state for eac
 | Other script copy | `coge-transcriptions/transcripts-processing/` stays as it is | Q9 |
 | Stack | Vue 3 + Vite + TypeScript + Tailwind 4 + Vitest | Q10 |
 | Rule control | A checkbox per level-2 rule, all on by default | Q12 |
+| Hosting | Netlify, static only. No `functions` directory until rule 7 has its own round. | Q11b |
+| Stages | Two visible stages with a gate: level 2 cannot run before level 1. Editing the raw pane marks downstream **stale** (dimmed, with a re-run badge) without clearing it. | Q13b |
+| Middle pane | The reflowed pane is editable, and "Apply rules" uses its current content, not a fresh level-1 run. It is the repair point between two lossy stages. | Q13b |
+| Verification | Golden transcripts (`docs/golden-transcripts/`) as the regression net, hand-written examples (`docs/hand-written-examples/`) as the per-rule specification. | Q15 |
+| Preset UI | A preset list. Picking one reveals its rules, all checked; the user unchecks what they do not want. | Q16 |
+| Backlog | Issues for actionable defects; `docs/port-divergences.md` stays the complete record. | Q17 |
 
 ## Deferred to v2
 
 - Diff view of raw vs. cleaned, behind a toggle (Q5).
 - Rule 7 via an LLM call (Q4).
 - Batch re-run of the rules across the whole corpus (Q9).
+
+## Where things live
+
+| Path | What it holds |
+| --- | --- |
+| `original-scripts/` | The Python being ported. Frozen as provenance (Q7). |
+| `docs/port-divergences.md` | Every place the code and the spec disagree, each with a measured example and a disposition. The complete record. |
+| `docs/golden-transcripts/` | Real before/after pairs. Verified byte-identical to the Python's output. |
+| `docs/hand-written-examples/` | One case per rule and per divergence, in isolation. |
+| `docs/grillings/` | The scope grilling, one file per round. |
+
+## Reading the pipeline
+
+Two facts that are not obvious from the code and cost time to rediscover:
+
+- **Rule 11 has never fired.** Its anchor is the exact paragraph `The Church of God the Eternal.`, which level 1 never produces — it glues the short closing lines into one long paragraph. The redefined anchor is `The Church of God the Eternal has just presented`, and the `has just presented` part is load-bearing: the same transcript *opens* with `The Church of God the Eternal presents …`, and a shorter anchor truncates the document to nothing.
+- **Five of the eleven rules do real work on a typical transcript.** Rules 2, 4, 6, 8 and 11 fire on none of the real text captured so far, which is why the hand-written examples are load-bearing rather than decorative.
 
 ## Related repos
 

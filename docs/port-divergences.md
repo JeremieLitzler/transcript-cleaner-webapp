@@ -9,7 +9,68 @@ Two documents disagree:
 
 Every entry below was verified by running the code, not by reading it. Verified behaviour is quoted as a Python repr so the exact whitespace is visible.
 
-Severity is about the port, not about the corpus: **data loss** means output is destroyed; **wrong output** means the rule produces text the spec says it should not; **missed** means the rule fails to fire where the spec says it should; **unimplementable** means the spec condition is a semantic judgement no deterministic rule can make (the rule 7 problem).
+Severity is about the port, not about the corpus:
+
+- **data loss** means output is destroyed;
+- **wrong output** means the rule produces text the spec says it should not;
+- **missed** means the rule fails to fire where the spec says it should;
+- **unimplementable** means the spec condition is a semantic judgement and no deterministic rule can make (the rule 7 problem).
+
+---
+
+## Triage — your calls from round v03
+
+Your `#### Jeremie's point of view` notes below are the source of this table; it exists so the dispositions can be read in one place. Three entries turned out **not to be defects at all** — your intended behaviour and the code's behaviour agree, and I had mis-read intent as a bug.
+
+The **fires on the golden pair?** column is measured, not guessed: each rule was run in isolation over `docs/golden-transcripts/english-level1-transcript.md` (503 paragraphs) and the touched-paragraph count recorded.
+
+| ID | Disposition | Fires on the golden pair? |
+| --- | --- | --- |
+| L1-01 `?` / `!` do not end a paragraph | **Not a defect.** Intended: the paragraph continues. | n/a — 79 of 503 paragraphs carry a mid-paragraph `? ` |
+| L1-02 period inside closing punctuation | **Not a defect.** Intended: the paragraph continues. | n/a |
+| L1-03 ellipsis forces a break | **Fix.** Match the ellipsis explicitly, before the period rule. | no — zero `...` in either transcript |
+| L1-04 no language-specific behaviour | Not a defect. Recorded to close an assumption. | n/a |
+| L2-R11-01 / -02 rule 11 | **Fix, redefined.** Remove from and including `The Church of God the Eternal has just presented`. | **yes** — and only as redefined; see below |
+| L2-R02-01 rule 2 ignores the preceding dot | **Not a defect.** The joined output is what you want. | no — rule 2 never fires |
+| L2-R02-02 "carry related meaning" | Open — you asked why it is unimplementable. Answered in round v04. | no |
+| L2-R0X-01 `rstrip(".")` eats ellipses | Open — your answer and L1-03 pull in opposite directions. Round v04. | no |
+| L2-R03-01 / -02 rule 3 | **Fix per the spec prose.** | no — all 5 targets already satisfy the spec's condition |
+| L2-R04-01 "But" cascade | **Leave as is for now.** | no — no run of 3+ |
+| L2-R05-01 rule 5 whitespace | **Fix per the spec prose.** | no — no `?` with 2+ spaces |
+| L2-R06-01 rule 6 skips a second hit | **Fix.** The second hit must match. | no — no paragraph ends in `Mr.` |
+| L2-R06-02 `Mrs.` / `Dr.` / `St.` | **Extend the rule.** Scope change, not a bug fix. | no |
+| L2-R08-01 punctuation after the pronoun | **Fix.** Be consistent with `_first_word`. | no — rule 8 never fires |
+| L2-R08-02 `_PRONOUNS` contains determiners | Open — you asked a question back. Answered in round v04. | no |
+| L2-R09-01 duplicate comparison | **Won't fix for now.** | yes — removes 5 paragraphs |
+| L2-R10-01 the "Then" exception list | **Unimplementable, agreed.** | yes — joins 2 paragraphs |
+| L2-R01-01 unguarded index in rule 1 | **Harden.** Corrected since v03 — it does not crash; the fault is latent. | no — no bare `And` paragraph |
+
+Two consequences worth stating plainly:
+
+1. **Rule 11 as currently coded never fires on real data.** `_TRAILER` is the exact paragraph `The Church of God the Eternal.`, and that paragraph does not exist in the golden transcript — level 1 glues the short closing lines into one long paragraph reading `The Church of God the Eternal has just presented What is Partiality? …`. Your redefinition is therefore not a tightening of a working rule, it is the first version of it that does anything. Your wording also matters more than it looks: paragraph 1 of the same transcript begins `The Church of God the Eternal presents …`, so an anchor of `The Church of God the Eternal` alone would truncate the document to nothing. `has just presented` is what separates the closing from the opening.
+2. **Most of the fixes you asked for change nothing on the golden pair.** Only the rule 11 redefinition alters the output. That is not an argument against the fixes — it is a measurement of how little coverage one transcript gives, and it is why the hand-written examples are load-bearing rather than a nice-to-have.
+
+### Coverage of the golden pair
+
+Measured over the English pair, per rule, in pipeline order:
+
+| Rule | Paragraphs touched |
+| --- | --- |
+| 11 remove trailer | **0 — never fires** |
+| 9 remove duplicates | 5 removed |
+| 6 `Mr.` join | **0 — never fires** |
+| 2 `and` join | **0 — never fires** |
+| 10 `Then` join | 2 joined |
+| 8 `That` + pronoun | **0 — never fires** |
+| 4 `But` … `But` | **0 — never fires** |
+| 7 verbless join | 0 — no-op by design |
+| 1 remove `And` | 80 |
+| 3 capitalise first | 5 |
+| 5 capitalise after `?` | 1 |
+
+Five of the eleven rules do real work on this transcript. Six never fire.
+
+Rule 8 declining is correct behaviour, not a miss: all six `That …` paragraphs in the transcript are `That was`, `That is`, `That still`, `That trying` — demonstrative sentences that should stay separate. The rule is right to leave them alone.
 
 ---
 
@@ -26,6 +87,28 @@ OUT : "What is that foundation? Let's do a quick summary.\n\nNext sentence here.
 
 The spec agrees with the code here ("A sentence-ending line ends with a period"), so this is a divergence from _intent_, not from the written spec. It is listed first because it fires on essentially every transcript, and because level 2's rule 5 (capitalise after `?`) exists only to clean up after it.
 
+#### Jeremie's point of view on L1-01
+
+The example is fine.
+
+If I have
+
+```plaintext
+What is that foundation?
+Let's do a quick summary.
+Next sentence here.
+```
+
+It should become:
+
+```plaintext
+What is that foundation? Let's do a quick summary.
+
+Next sentence here.
+```
+
+What's wrong with that?
+
 ### L1-02 — a period inside closing punctuation is not a sentence end — _wrong output_
 
 `stripped.endswith(".")` fails when the period is followed by a closing quote, bracket or parenthesis.
@@ -33,6 +116,21 @@ The spec agrees with the code here ("A sentence-ending line ends with a period")
 ```text
 IN  : 'He said "I will come."\nThen he left.'
 OUT : 'He said "I will come." Then he left.'
+```
+
+#### Jeremie's point of view on L1-02
+
+Same as L1-01:
+
+```plaintext
+He said "I will come."
+Then he left.
+```
+
+should become:
+
+```plaintext
+He said "I will come." Then he left.
 ```
 
 ### L1-03 — an ellipsis forces a paragraph break — _wrong output_
@@ -44,9 +142,23 @@ IN  : 'Il a dit...\nEt puis il est parti.'
 OUT : 'Il a dit...\n\nEt puis il est parti.'
 ```
 
+#### Jeremie's point of view on L1-03
+
+Match exactly the ellipsis and apply **before** period rule?
+
 ### L1-04 — level 1 has no language-specific behaviour — _not a defect_
 
 Recorded to close an open assumption from Q3b. Level 1 was tested against French input and behaves identically to English: `.` ends a paragraph, everything else is glued. There is no character class, locale, pronoun list or word list anywhere in the script. French exposes no gap that English does not already expose — L1-01 through L1-03 are the whole list, and all three are language-neutral.
+
+### L1-05 — the raw transcripts are CRLF, and the port must normalise them — _new, found while verifying the golden pair_
+
+Every file in `docs/golden-transcripts/` ends its lines with `\r\n`. Python hides this twice over: `str.splitlines()` splits on `\r\n` and drops it, `str.strip()` would remove a stray `\r` anyway, and `Path.write_text` re-inserts `\r\n` on Windows. None of that is true in a browser. A TypeScript port that splits on `"\n"` will carry a trailing `\r` into every paragraph, which then defeats `endsWith(".")` on _every single line_ — level 1 would produce one enormous paragraph.
+
+The port must normalise `\r\n` and bare `\r` to `\n` before splitting. This is not a divergence from the Python; it is a divergence the port will introduce if nobody writes it down.
+
+### L1-06 — trailing-newline convention — _new, minor_
+
+`format_transcription.py` ends with `.rstrip()`, so the Python output has no final newline. The golden files as committed do have one. This is the only difference between the Python's output and the committed goldens — content is otherwise byte-identical for all three pairs. Whatever the port does, the comparison in the test suite has to state which convention it asserts.
 
 ---
 
@@ -61,9 +173,21 @@ IN  : 'The Church of God the Eternal.\n\nReal content follows here.\n\nMore cont
 OUT : ''
 ```
 
+#### Jeremie's point of view on L2-R11-01
+
+This rule is to remove the end generic and everything that follows.
+
+It is not the beginning.
+
+Originally, there was a `.` on the last occurence of `The Church of God the Eternal.`. As described in the example of rule 11 and as you can see in the golden transcript, the `.` doesn't exists, so rule 11 should become "Remove anything after and including `The Church of God the Eternal has just presented`".
+
 ### L2-R11-02 — rule 11 matches only an exact whole paragraph — _missed_
 
 `p == _TRAILER`. Any trailing whitespace, casing difference, or the trailer glued to adjacent text by level 1 leaves the entire trailer block in place.
+
+#### Jeremie's point of view on L2-R11-02
+
+See comment on L2-R11-01.
 
 ### L2-R02-01 — rule 2 ignores "follows a line ending with a dot" — _wrong output_
 
@@ -76,9 +200,17 @@ OUT : 'Is that so? And yet here we are.'
 
 Note the join is then masked by rule 5, which capitalises after the `?` — so the incorrect join produces text that looks deliberate.
 
+#### Jeremie's point of view on L2-R02-01
+
+Why wrong input? The OUT in the example is correct.
+
 ### L2-R02-02 — rule 2's "carry related meaning" is not implemented — _unimplementable_
 
 The spec's third condition is a semantic judgement, the same class of problem as rule 7. The code joins on the literal prefix alone.
+
+#### Jeremie's point of view on L2-R02-02
+
+Why is it _unimplementable_?
 
 ### L2-R0X-01 — `rstrip(".")` silently eats ellipses — _wrong output; affects rules 2, 4, 8, 10_
 
@@ -89,6 +221,26 @@ IN  : 'He paused there...\n\nand then went on.'
 OUT : 'He paused there and then went on.'
 ```
 
+#### Jeremie's point of view on L2-R0X-01
+
+Again, the example shows the expected OUT from IN
+
+### L2-R0X-02 — joining truncates a trailing abbreviation — _new, wrong output; affects rules 2, 4, 8, 10_
+
+Found while working out whether `rstrip(".")` should be greedy. It is a separate problem and nobody has looked at it.
+
+```text
+IN  : 'He was born in the U.S.A.\n\nand raised in Kent.'
+OUT : 'He was born in the U.S.A and raised in Kent.'
+
+IN  : 'She joined at 9 a.m.\n\nand left at noon.'
+OUT : 'She joined at 9 a.m and left at noon.'
+```
+
+The period after `U.S.A` and `a.m` belongs to the abbreviation, not to the sentence, but a join cannot tell the difference — the same character ends both. Greedy or single-character stripping behaves identically here, so this is not fixed by anything proposed for L2-R0X-01.
+
+Deterministically this needs an abbreviation list, which is the same shape of approximation as rule 10's exception list. Recorded, not proposed.
+
 ### L2-R03-01 — rule 3 ignores "follows a line ending with a dot" — _wrong output_
 
 The code capitalises any paragraph whose first character is lowercase, regardless of what precedes it.
@@ -97,6 +249,12 @@ The code capitalises any paragraph whose first character is lowercase, regardles
 IN  : 'Is that so?\n\nyes it is.'
 OUT : 'Is that so?\n\nYes it is.'
 ```
+
+#### Jeremie's point of view on L2-R03-01
+
+I know this goes against a decision I took but the @/e/git/github/coge-transcriptions/docs/formatting/README.md rules describe well what I had in mind (expect for rule 11 update above)
+
+So apply Rule 3 per specification prose.
 
 ### L2-R03-02 — rule 3 has no "and" exclusion — _wrong output_
 
@@ -107,6 +265,10 @@ IN  : 'and so it begins.\n\nSecond para.'
 OUT : 'And so it begins.\n\nSecond para.'
 ```
 
+#### Jeremie's point of view on L2-R03-02
+
+So apply Rule 3 per specification prose.
+
 ### L2-R04-01 — rule 4 cascades past a pair — _wrong output_
 
 The spec describes joining one "But" line to the preceding "But" line. The code tests the accumulated result, so a run of three or more collapses into a single run-on.
@@ -115,6 +277,10 @@ The spec describes joining one "But" line to the preceding "But" line. The code 
 IN  : "But they haven't.\n\nBut no one else has.\n\nBut we do."
 OUT : "But they haven't and no one else has and we do."
 ```
+
+#### Jeremie's point of view on L2-R04-01
+
+Leave as is for now. I haven't seen this example you gave.
 
 ### L2-R05-01 — rule 5 matches exactly one space — _missed_
 
@@ -125,6 +291,17 @@ IN  : "What is that?  let's see."
 OUT : "What is that?  let's see."
 ```
 
+#### Jeremie's point of view on L2-R05-01
+
+Example should output :
+
+```text
+IN  : "What is that?  let's see."
+OUT : "What is that?  Let's see."
+```
+
+The @/e/git/github/coge-transcriptions/docs/formatting/README.md describes well the rule
+
 ### L2-R06-01 — rule 6 does not re-examine a joined paragraph — _missed_
 
 `_consume_mr_pair` advances the index by two after a join, so if the joined result itself ends in `Mr.`, it is never tested.
@@ -134,9 +311,17 @@ IN  : 'Preserved through Mr.\n\nRaymond Cole and Mr.\n\nJohn Brisby spoke.'
 OUT : 'Preserved through Mr. Raymond Cole and Mr.\n\nJohn Brisby spoke.'
 ```
 
+#### Jeremie's point of view on L2-R06-01
+
+So the second hit must match indeed
+
 ### L2-R06-02 — rule 6 handles only `Mr.` — _scope, not a defect_
 
 `Mrs.`, `Dr.`, `St.` and initials produce the same broken line break and are not handled. The spec also names only `Mr.`, so the code matches the spec; recorded because the underlying problem is broader than the rule.
+
+#### Jeremie's point of view on L2-R06-02
+
+Fair point to add support `Mrs.`, `Dr.`, `St.` and initials.
 
 ### L2-R08-01 — rule 8 fails when punctuation follows the pronoun — _missed_
 
@@ -152,21 +337,48 @@ OUT : "They all proved sooner or later that they didn't love it."
 
 This is the clearest internal inconsistency in the file: two rules solve the same sub-problem, one of them correctly.
 
+#### Jeremie's point of view on L2-R08-01
+
+Let's be consistence then
+
 ### L2-R08-02 — `_PRONOUNS` contains determiners and possessives — _wrong output_
 
 The spec says "followed by a pronoun". The set includes `his`, `her`, `their`, `our`, `my`, `your`, `this`, `these`, `those`, which are determiners or possessive adjectives in this position. The rule fires on constructions the spec does not describe.
+
+#### Jeremie's point of view on L2-R08-02
+
+Fair, the spec gives only the `they` example while the code lists more. Is that the issue.
 
 ### L2-R09-01 — rule 9 compares paragraphs, exactly — _missed_
 
 The spec says "a sentence followed by the exact same sentence". The code compares whole paragraphs with `==`. Duplicates that differ by whitespace or capitalisation survive. In practice rule 9 runs second in the pipeline, before any joins, so paragraphs are still close to sentences — but the two are not the same thing once L1-01 has glued a `?` line onto its successor.
 
+#### Jeremie's point of view on L2-R09-01
+
+Won't fix for now.
+
 ### L2-R10-01 — rule 10's exception is a fixed seven-word list — _unimplementable_
 
 The spec says the exception is "a word implying that the sentence MUST NOT join". The code uses `{how, what, why, when, where, who, lastly}`. Same class as rules 2 and 7.
 
-### L2-R01-01 — rule 1 raises on a bare `"And "` paragraph — _crash_
+#### Jeremie's point of view on L2-R10-01
 
-`_strip_leading_and` indexes `body[0]` without checking that `body` is non-empty. A paragraph consisting of exactly `"And "` raises `IndexError`. Low likelihood, one-line guard.
+I agree > _unimplementable_.
+
+### L2-R01-01 — rule 1 has an unguarded index, reachable only outside the pipeline — _latent, not a crash in practice_
+
+**Corrected since v03.** I wrote that a paragraph of exactly `"And "` raises `IndexError`. It does not. `Paragraphs.from_text` strips every paragraph on the way in, so the rule sees `"And"`, which fails `startswith("And ")` and passes through untouched:
+
+```text
+IN  : 'And \n\nSecond para.'
+OUT : 'And\n\nSecond para.'
+```
+
+`_strip_leading_and` does still index `body[0]` without checking that `body` is non-empty, so the fault is real — it is simply unreachable while `from_text` is the only entry point. In TypeScript each rule becomes an exported, individually testable function, at which point the guard stops being theoretical. One line, worth having, but this is hardening rather than a defect.
+
+#### Jeremie's point of view on L2-R01-01
+
+I haven't add this, but OK for strengthing the rule.
 
 ---
 

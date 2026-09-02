@@ -5,6 +5,7 @@
 - **Q3b — Language:** the constraint attaches to the level, not the app. **Level 1** (`format_transcription.py`) is the reflow stage and runs on any language, English and French included. **Level 2** (`format_advanced.py`) is the advanced-rule stage, English only, because one corpus exists. That vocabulary — level 1, level 2 — is now the project's, and it is written into `CONTEXT.md`.
 - **Q8 — Spec vs. code:** (c). Port the code as it is for v1, and record an issue per divergence rather than fixing them during the port.
 - **Q9 — The other script copy:** `coge-transcriptions/transcripts-processing/` stays exactly as it is. Batch re-run becomes a future feature of this app, motivated by the level-2 rules that are only approximations.
+  - Edit: An issue needs to be created for this.
 - **Q10 — Stack:** (a). Vue 3 + Vite + TypeScript + Tailwind 4 + Vitest, because you foresee a bigger app.
 - **Q12 — Rule control:** (b). A checkbox per level-2 rule, all on by default.
 - **Q14 — Names:** (a). Raw transcript > reflowed transcript > cleaned transcript. Written into `CONTEXT.md` along with level 1 / level 2 and the preset definition.
@@ -37,11 +38,11 @@ Your Q3b answer said "I understand some adaptations need to occur in level 1 scr
 
 What level 1 _does_ have is three real gaps, and all three are language-neutral — French exposes nothing English does not already expose (`docs/port-divergences.md`, L1-01 to L1-03):
 
-| ID | Gap | Effect |
-| --- | --- | --- |
-| L1-01 | `?` and `!` do not end a paragraph | `"What is that foundation?\nLet's do a quick summary."` becomes one paragraph. Fires on nearly every transcript. |
-| L1-02 | A period before a closing quote or bracket is not a sentence end | `'He said "I will come."\nThen he left.'` becomes one paragraph. |
-| L1-03 | An ellipsis forces a paragraph break | `'Il a dit...\nEt puis il est parti.'` splits mid-thought. |
+| ID    | Gap                                                              | Effect                                                                                                           |
+| ----- | ---------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------- |
+| L1-01 | `?` and `!` do not end a paragraph                               | `"What is that foundation?\nLet's do a quick summary."` becomes one paragraph. Fires on nearly every transcript. |
+| L1-02 | A period before a closing quote or bracket is not a sentence end | `'He said "I will come."\nThen he left.'` becomes one paragraph.                                                 |
+| L1-03 | An ellipsis forces a paragraph break                             | `'Il a dit...\nEt puis il est parti.'` splits mid-thought.                                                       |
 
 L1-01 is the one that matters, and it reframes level 2's rule 5 entirely: "capitalise the word after a `?`" is not a formatting preference, it is cleanup for the paragraph L1-01 failed to break. That drives Q3c.
 
@@ -50,6 +51,7 @@ L1-01 is the one that matters, and it reframes level 2's rule 5 entirely: "capit
 v02 named three divergences (rules 2, 3, 10). Running the code found eighteen. Two are worse in kind than "an approximation of the spec":
 
 - **L2-R11-01 is data loss.** Rule 11 truncates from the _first_ paragraph matching the trailer, wherever it sits. Given a transcript that _opens_ with `The Church of God the Eternal.` — which is exactly the shape of the spec's own rule 11 example — the output is the empty string. The whole transcript is gone.
+  - Edit: are you sure? I've run the level 2 rules on quite a few transcripts and it didn't empty the files...
 - **L2-R08-01 is an internal inconsistency, not an approximation.** Rule 10 strips punctuation before testing its trigger word; rule 8 does not. So `That they didn't love it.` joins and `That they, in the end, didn't love it.` does not. Two rules, same sub-problem, one solved correctly.
 
 Neither changes the Q8 answer — you port them as they are and file them — but L2-R11-01 changes how urgent one of those issues is, which feeds Q17.
@@ -67,6 +69,8 @@ Finding 2 removes the reason you gave for adapting level 1. What is left is L1-0
 ➡️ Recommendation: **(a)**. The reason for (b) evaporated when the adaptation turned out to be about punctuation rather than language, and Q8 already answered the general form of this question: divergences get filed, not fixed mid-port. Taking (b) here means v1 cannot be verified against the existing corpus at all, which costs you the cheapest testing strategy available (Q15). (c) is the one I want to warn you off hardest: it invents a user-facing knob for a need nobody has demonstrated, and it puts a differently-shaped control on level 1 when Q12 already gives you toggles on level 2 — two configuration surfaces on a two-stage pipeline, in v1. File L1-01 as the first issue you fix _after_ v1 ships, when a batch re-run (Q9) can carry the corpus with it.
 
 ### Answer to Q3c
+
+Let's go for (a) and file an new issue Finding 2 to review it later.
 
 ---
 
@@ -87,6 +91,10 @@ What genuinely favours Netlify is smaller and more boring than rule 7: you alrea
 ➡️ Recommendation: **(b)**. Take the host you already know, at zero cost, and skip the migration. What I will not concede is (c): the Function is a security and cost design, not a deployment target, and folding it into a scope round is how it ends up shipped without a spend cap. Let `netlify.toml` sit there with no functions directory until rule 7 gets its own round.
 
 ### Answer to Q11b
+
+Of course (b).
+
+A new issue still needs creation for rule 7 of level 2.
 
 ---
 
@@ -110,6 +118,8 @@ If it is not, two visible stages are one-button-mode with an extra click and an 
 
 ### Answer to Q13b
 
+I like (c)
+
 ---
 
 ## Q15 - How do we prove the port is faithful?
@@ -130,6 +140,11 @@ One thing to decide inside this: **how many pairs, and do they go in this repo?*
 
 ### Answer to Q15
 
+(b) and (c).
+
+For (b), I can provide an english and french transcript (see @docs/golden-transcripts).
+For (c), I will fill the @docs/hand-written-examples with at least usecase per rule and entry in `docs/port-divergences.md`
+
 ---
 
 ## Q16 - Is the preset visible in v1?
@@ -145,6 +160,10 @@ Q1 settled that the rule set becomes a named preset. Q12 settled a checkbox per 
 Two caveats I would rather state than hide. First, (b) has one real argument I could not dismiss: Q3b put the English-only statement "where the rules are chosen", and with (a) there is no named thing to attach it to — it becomes a line of text floating above a checkbox list. If that bothers you, (b) is defensible on those grounds alone. Second, (c) becomes worth having roughly a week after you start toggling eleven checkboxes and want your defaults back — but that is a two-line addition later, not a scope decision now.
 
 ### Answer to Q16
+
+Maybe a small prototype will be useful.
+
+I picture a list of presets (`COGE (english)`, etc) and then, once you check a preset, it lists the rules, all checked and user unchecks the ones he doesn't need.
 
 ---
 
@@ -167,6 +186,8 @@ Three streams of deferred work now exist, and they are not the same kind of thin
 My recommendation is the second: four issues, each with a divergence ID in the title, and the catalogue stays the complete record. Tell me which, and I will open them.
 
 ### Answer to Q17
+
+List me the issues and I will ack which ones to create.
 
 ---
 
