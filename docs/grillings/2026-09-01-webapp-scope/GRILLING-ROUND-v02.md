@@ -2,26 +2,26 @@
 
 ## Settled in v01
 
-- **Q1 — Corpus-specific or general-purpose:** (c). The rule set becomes a named preset so a second one can be added later. You sharpened this in a way that reshapes the tree: `format_transcription.py` is universal — it works on any transcript — and only `format_advanced.py` carries COGE-specific rules. So the preset concept applies to the *advanced* stage alone; the reflow stage has nothing to configure.
+- **Q1 — Corpus-specific or general-purpose:** (c). The rule set becomes a named preset so a second one can be added later. You sharpened this in a way that reshapes the tree: `format_transcription.py` is universal — it works on any transcript — and only `format_advanced.py` carries COGE-specific rules. So the preset concept applies to the _advanced_ stage alone; the reflow stage has nothing to configure.
 - **Q2 — Input:** (a). Plain text only: paste into a textarea, plus an optional `.txt` drop. No `.srt` / `.vtt` / `.json` in v1.
 - **Q3 — Language:** (a). English only, stated in the UI. (Reopened below, narrowed.)
 - **Q4 — LLM rule 7:** (a). Out of scope for v1. v1 is deterministic string work, which keeps it a static page with no backend, no key, no per-use cost, and no transcript leaving the browser.
 - **Q5 — Presentation:** (a). Side-by-side input and output. Diff view (c) is recorded as a v2 feature, behind a toggle.
-- **Q6 — Export:** (c). Copy to clipboard *and* download `.txt`.
+- **Q6 — Export:** (c). Copy to clipboard _and_ download `.txt`.
 - **Q7 — Python scripts:** (a). Port the rules to the webapp; freeze `original-scripts/` as provenance.
 
 ## Reopened
 
 **Q3 (language) reopens, narrowed.** Two things happened. First, your Q1 answer split the pipeline into a universal stage and a corpus-specific stage — and "English only" cannot be true of both, because the reflow stage only ever asks "does this line end with a period?", which is as true in French as in English. Second, I found evidence in your own corpus: `coge-transcriptions/README.md` carries an open **Task 9 — "Check which files in holy days transcriptions contains french. Might need to retranscribe with English set in the settings instead 'Auto'."** So French transcripts already exist in the material this app is for.
 
-What (b) and (c) died for still holds: you are not building a French rule set (b), and you are not staying silent about the limitation (c). What is live is only *where the English claim attaches*. That is Q3b.
+What (b) and (c) died for still holds: you are not building a French rule set (b), and you are not staying silent about the limitation (c). What is live is only _where the English claim attaches_. That is Q3b.
 
 ## What I found since v01
 
 Three facts drive the questions below. All are verifiable in `E:/Git/GitHub/coge-transcriptions`, which is cloned next to this repo.
 
 1. **There is an authoritative prose spec** at `coge-transcriptions/docs/formatting/README.md`, describing the raw formatting rules and all eleven advanced rules with before/after examples. v01 was written without it. **It does not match the Python.** Rule 2 requires "the two sentences carry related meaning"; the code only checks `startswith("and ")`. Rule 3 requires the line to follow one ending in a period and to not be "and"; the code capitalises any paragraph starting lowercase. Rule 10's exception is specified as "a word implying that the sentence MUST NOT join"; the code uses a fixed list of seven words. The spec describes intent; the code is a deterministic approximation of it.
-2. **The scripts exist twice.** `coge-transcriptions/transcripts-processing/` holds `format_transcription.py` and `format_advanced.py` too. `format_advanced.py` is byte-identical to this repo's copy; `format_transcription.py` differs only in a hard-coded default filename. v01's Q7 settled the fate of *this* repo's copy and said nothing about that one.
+2. **The scripts exist twice.** `coge-transcriptions/transcripts-processing/` holds `format_transcription.py` and `format_advanced.py` too. `format_advanced.py` is byte-identical to this repo's copy; `format_transcription.py` differs only in a hard-coded default filename. v01's Q7 settled the fate of _this_ repo's copy and said nothing about that one.
 3. **Your house stack is Vue 3 + Vite + TypeScript + Tailwind 4 + Vitest** (`french-gas-stations-scraper`, exact versions in its `package.json`), but you also ship plain static pages with a hand-written `index.html` and no build step at all (`declaration-of-conversion`). Both precedents are yours, which is why Q10 is a real question rather than a formality.
 
 ---
@@ -38,6 +38,12 @@ Given that reflow is language-agnostic and only the advanced rules are English, 
 
 ### Answer to Q3b
 
+Actually, I do want to process french transcript in the first level.
+
+Let's categorize `format_transcription.py` as level 1 from here on and level 2 is `format_advanced.py` with specific presets rules.
+
+So english and french will need to run with level 1 (I understand some adaptations need to occur in level 1 script) and level 2 is english only since only one corpus exists today.
+
 ---
 
 ## Q8 - When the spec and the code disagree, which one do we port?
@@ -52,21 +58,27 @@ Fact 1 above. `docs/formatting/README.md` states rules 2, 3 and 10 with semantic
 
 ### Answer to Q8
 
+Let's record an issue for each bug and port code as it is for v1. So it is (c)
+
 ---
 
-## Q9 - What happens to the *other* copy of the scripts?
+## Q9 - What happens to the _other_ copy of the scripts?
 
 Q7 froze `original-scripts/` in this repo. It did not address `coge-transcriptions/transcripts-processing/`, which is where the scripts actually get run. If the webapp is the single implementation, that copy is a second one; if it stays, the drift Q7 was meant to prevent just moves to a different repo.
 
 The answer turns on something only you know: **do new transcripts arrive one at a time, or in batches?** A webapp is fine for a sermon a week. It is the wrong tool for re-running rules across four thousand existing files.
 
 - **a)** The webapp replaces it. Mark `transcripts-processing/format_*.py` superseded, point its README at the webapp, and clean new sermons by paste.
-- **b)** Keep it as the batch tool, webapp for one-offs, and accept two implementations — pinned to a shared golden-file test set so drift is *detected* rather than prevented.
+- **b)** Keep it as the batch tool, webapp for one-offs, and accept two implementations — pinned to a shared golden-file test set so drift is _detected_ rather than prevented.
 - **c)** Keep it and do nothing about the duplication for now.
 
 ➡️ Recommendation: **(b)**, unless bulk re-runs are genuinely behind you. The Python earns its place the moment you want to change a rule and re-apply it to the whole corpus, which no webapp will do. What makes (b) safe rather than sloppy is the shared test set — the same inputs and expected outputs run against both implementations, so the day they disagree, something fails. If you are confident the corpus is finished and only new sermons arrive, (a) is better and simpler. (c) is the option that quietly becomes a bug in a year.
 
 ### Answer to Q9
+
+Since you pointed out that some rules of level 2 script are not really implemented, I might re-run in batch, so that's a future feature of this current.
+
+The scripts in `coge-transcriptions` repo remain as it is now. But the version it holds is the most recent so sync this repo's version from that other repo so both are in sync before we start coding this app.
 
 ---
 
@@ -82,6 +94,8 @@ The app is a static page running eleven string transformations over a textarea. 
 
 ### Answer to Q10
 
+Let's do (a) since I foresee a bigger app in the future.
+
 ---
 
 ## Q11 - Where does it get hosted?
@@ -94,6 +108,8 @@ The app is a static page running eleven string transformations over a textarea. 
 
 ### Answer to Q11
 
+Since rule 7 is not cancel but postponed, Netlify is a better choice since using a Netlify Function might be the way to talk to a LLM, no ?
+
 ---
 
 ## Q12 - Does the user control individual rules?
@@ -104,9 +120,11 @@ Eleven rules, several of them lossy. Rule 11 truncates everything after a matche
 - **b)** A checkbox per rule, all on by default, so a misbehaving rule can be switched off and the text re-cleaned.
 - **c)** One button in v1; per-rule toggles recorded as a v2 feature alongside the diff view.
 
-➡️ Recommendation: **(b)**, and I am arguing against my own instinct to keep v1 minimal. The reason is Q8: you are deliberately porting rules that are known approximations of their spec, so misfires are not a hypothetical, they are the documented state of the system. A toggle turns "this rule mangled my paragraph" from a hand-editing chore into a click, and it is cheap — the pipeline is already a list of functions, so the UI is a list of checkboxes filtering that list. It also makes the preset from Q1 concrete: a preset *is* a selected set of rules.
+➡️ Recommendation: **(b)**, and I am arguing against my own instinct to keep v1 minimal. The reason is Q8: you are deliberately porting rules that are known approximations of their spec, so misfires are not a hypothetical, they are the documented state of the system. A toggle turns "this rule mangled my paragraph" from a hand-editing chore into a click, and it is cheap — the pipeline is already a list of functions, so the UI is a list of checkboxes filtering that list. It also makes the preset from Q1 concrete: a preset _is_ a selected set of rules.
 
 ### Answer to Q12
+
+Agreed with recommendation
 
 ---
 
@@ -121,6 +139,8 @@ The scripts are strictly sequential, and `format_advanced.py` only works on outp
 ➡️ Recommendation: **(a)**. The two-script split is an artefact of how the CLI grew, not a distinction that means anything to someone cleaning a transcript — and (b) hands the user a way to get it wrong by running stage 2 on unreflowed text. (c) sounds like a good compromise but the intermediate is rarely the thing you need: with Q12's toggles you can already isolate a misbehaving advanced rule, and reflow itself is one simple rule that either worked or obviously did not.
 
 ### Answer to Q13
+
+what about (b) with a gate to run level1 script always first before being able to run level2 script?
 
 ---
 
@@ -137,6 +157,8 @@ There are three distinct things: what Vibe produces (one utterance per line, mid
 ➡️ Recommendation: **(a)**. "Raw" is already the word you use in `coge-transcriptions`, so choosing anything else means the two repos describe the same file differently. "Reflowed" is the honest name for the middle artefact — it says what happened to it. Once you confirm, I will write these into a `CONTEXT.md` at the repo root as the project glossary.
 
 ### Answer to Q14
+
+Agreed with recommendation
 
 ---
 
