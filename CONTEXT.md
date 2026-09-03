@@ -58,6 +58,11 @@ A **preset** is a named set of level-2 rules with a default on/off state for eac
 - **File drop** — A drop fills the raw pane and stops; it does not run level 1. It marks reflowed and cleaned stale rather than clearing them, matching Q13b's policy for edits. Drops are accepted anywhere on the page and always target the raw pane; per-pane drop targets were rejected because they add a second entry point to the gate. The filename is remembered and reused for the download (`sermon.txt` > `sermon-cleaned.txt`). _(Q25)_
 - **Presets shipped** — **COGE (English)**, all eleven rules. **Universal (any language)**, rules 3, 5 and 9 — the language-agnostic ones. (**Conservative**, from the prototype, is optional.) _(Q26)_
 - **Batch** — Stays Python, in `coge-transcriptions/transcripts-processing/`. It is a rare maintenance operation over a git checkout, and git is its undo. The golden transcripts are asserted against both implementations, so drift is detected rather than prevented. _(Q27)_
+- **Branch model** — Two branches. `develop` takes the day-to-day work; `main` is what has been released. Adopted together with the release pipeline, because a release triggered by a pull request needs a source and a target, and one branch is neither. _(issue #13)_
+- **CI** — A `PR Test & Build Check` workflow on every pull request into `develop` or `main`: `npm ci`, `npm audit signatures`, `npm run check`, `npm run build`. It runs `check` and not `test` because `npm run build` only typechecks `packages/web`; `packages/rules` has no build step, so its `tsc --noEmit` would otherwise never run in CI at all. _(issue #11)_
+- **Dependency updates** — Dependabot, weekly, over both the npm workspace and the GitHub Actions pins, targeting `develop`. No `labels:` block: Dependabot applies `dependencies` on its own and creates that label if it is missing, whereas a label named in the config that does not exist is skipped silently. _(issue #12)_
+- **Deploy** — Netlify's own Git integration, not a GitHub Actions job. This is Q11b's "Netlify, static only" turned into a mechanism: `netlify.toml` holds the build contract, Netlify holds the trigger. Chosen because the integration gives a deploy preview per pull request for free, which is the part that pays off for a UI whose whole point is visual, and because the two options are alternatives — running both would give one deploy two sources of truth. _(Q11b, issue #13)_
+- **Releases** — Conventional commits, read by a vendored `scripts/release/release.sh` (pinned; provenance and setup in `scripts/release/VENDORED.md`). A pull request from `develop` into `main` previews the version and notes that merging would produce; merging it tags and publishes the GitHub release. No changelog is committed back — the GitHub release is the artefact. Ported from `french-gas-stations-scraper` with one deliberate divergence: the source branch is filtered on rather than only declared, so `develop` > `main` is the only thing that cuts a release. Under the reference's logic any branch merged into `main` publishes one, including a `patch-1` branch from a web edit. _(issue #13)_
 
 ## Deferred to v2
 
@@ -78,6 +83,9 @@ A **preset** is a named set of level-2 rules with a default on/off state for eac
 | `packages/rules/tests/golden-transcripts/`    | Real before/after pairs. Verified byte-identical to the Python's output.                                         |
 | `packages/rules/tests/hand-written-examples/` | One case per rule and per divergence, in isolation.                                                              |
 | `docs/grillings/`                             | The scope grilling, one file per round.                                                                          |
+| `.github/workflows/`                          | Both pipelines: `pr-build.yml` checks every pull request, `release-bash.yml` previews and publishes releases.     |
+| `scripts/release/`                            | The vendored `release.sh` and its provenance. An unmodified upstream copy — read `VENDORED.md` before touching it. |
+| `netlify.toml`                                | The build contract for the deploy. The trigger lives in Netlify's Git integration, not in this repo.             |
 
 ## Reading the pipeline
 

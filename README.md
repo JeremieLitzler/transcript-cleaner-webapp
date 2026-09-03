@@ -47,6 +47,18 @@ In dev the app imports `packages/rules` **from source**, so a change to a rule r
 
 **Working inside a package.** `packages/rules` owns its own `vitest.config.ts` and carries the same four commands, so `cd packages/rules && npm test` runs exactly the tests that live there. The root runner aggregates each package's config rather than holding a glob of its own, which is why the two agree by construction rather than by being kept in step.
 
+## Branches, CI and releases
+
+Two branches: **`develop`** takes the day-to-day work, **`main`** is what has been released. Open pull requests against `develop`; `main` only ever receives a pull request from `develop`.
+
+Every pull request into either branch runs [`pr-build.yml`](.github/workflows/pr-build.yml): `npm ci`, `npm audit signatures`, `npm run check`, `npm run build`. It runs `check` rather than `test` because `npm run build` only typechecks `packages/web` — `packages/rules` has no build step, so its `tsc --noEmit` would otherwise never run in CI. Running `npm run check` locally before pushing therefore reproduces the whole gate.
+
+Releases come from conventional commits, read by the vendored [`scripts/release/release.sh`](scripts/release/release.sh). Opening the `develop` > `main` pull request previews the version and notes that merging would produce; merging it tags and publishes the GitHub release. So commit subjects matter: `feat:` bumps the minor, `fix:` the patch, a `!` or a `BREAKING CHANGE:` footer the major, and anything else rides along without moving the number.
+
+Deploy is Netlify's own Git integration rather than a workflow — [`netlify.toml`](netlify.toml) holds the build contract, Netlify holds the trigger, which is what gives a deploy preview per pull request. Publishing a release needs a GitHub App and two secrets that are **not yet provisioned**; the checklist is in [`scripts/release/VENDORED.md`](scripts/release/VENDORED.md).
+
+Dependabot opens weekly pull requests against `develop` for both the npm workspace and the action pins in `.github/workflows/`.
+
 ## Where things are
 
 |                                                                                              |                                                                                                                                  |
@@ -60,6 +72,8 @@ In dev the app imports `packages/rules` **from source**, so a change to a rule r
 | [`docs/grillings/`](docs/grillings/)                                                         | How the scope was decided, one file per round. Historical record — paths quoted inside are as they were at the time.             |
 | [`docs/prototypes/`](docs/prototypes/)                                                       | Throwaway UI prototypes. Open the `.html` in a browser; no build step.                                                           |
 | [`original-scripts/`](original-scripts/)                                                     | The Python being ported. Frozen as provenance.                                                                                   |
+| [`.github/workflows/`](.github/workflows/)                                                   | Both pipelines: `pr-build.yml` checks every pull request, `release-bash.yml` previews and publishes releases.                    |
+| [`scripts/release/`](scripts/release/)                                                       | The vendored `release.sh` and its provenance. An unmodified upstream copy — read `VENDORED.md` before touching it.               |
 
 ## Licence
 
