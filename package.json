@@ -6,11 +6,14 @@
     "packages/*"
   ],
   "scripts": {
-    "build": "npm run build --workspaces --if-present",
+    "start": "npm run dev",
     "dev": "npm run dev --workspace @transcript-cleaner/web",
+    "build": "npm run build --workspaces --if-present",
+    "preview": "npm run build --workspace @transcript-cleaner/web && npm run preview --workspace @transcript-cleaner/web",
     "test": "vitest run",
     "test:watch": "vitest",
-    "typecheck": "npm run typecheck --workspaces --if-present"
+    "typecheck": "npm run typecheck --workspaces --if-present",
+    "check": "npm run typecheck && npm test"
   },
   "devDependencies": {
     "@types/node": "^24.13.3",
