@@ -43,7 +43,7 @@ A **preset** is a named set of level-2 rules with a default on/off state for eac
 - **Hosting** — Netlify, static only. No `functions` directory until rule 7 has its own round. _(Q11b)_
 - **Stages** — Two visible stages with a gate: level 2 cannot run before level 1. Editing the raw pane marks downstream **stale** (dimmed, with a re-run badge) without clearing it. _(Q13b)_
 - **Middle pane** — The reflowed pane is editable, and "Apply rules" uses its current content, not a fresh level-1 run. It is the repair point between two lossy stages. _(Q13b)_
-- **Verification** — Golden transcripts (`packages/rules/tests/golden-transcripts/`) as the regression net, hand-written examples (`packages/rules/tests/hand-written-examples/`) as the per-rule specification. _(Q15)_
+- **Verification** — Golden transcripts (`packages/rules/tests/golden-transcripts/`) as the regression net, hand-written examples (`packages/rules/tests/hand-written-examples/`) as the per-rule specification, and `packages/rules/tests/python-semantics.test.ts` for the places Python and JavaScript string methods disagree, which no transcript in the corpus can reach. _(Q15, L1-07)_
 - **Preset UI** — A preset list. Picking one reveals its rules, all checked; the user unchecks what they do not want. Shape chosen from the prototype: **variant C** — a toolbar chip (`COGE (English) · 11/11 rules`) opening a drawer with presets on the left and rules on the right. Chosen because it leaves the most room for the transcripts. _(Q16, prototype)_
 - **Backlog** — Issues for actionable defects; `docs/port-divergences.md` stays the complete record. _(Q17)_
 - **Build order** — **Two phases.** Phase 1 ports the Python faithfully and all golden pairs must go green byte-for-byte. Phase 2 applies the agreed rule changes and regenerates the goldens. The point of phase 1 is proof that the TypeScript and the Python agree — it cannot be obtained retroactively. _(Q18)_
@@ -70,6 +70,7 @@ A **preset** is a named set of level-2 rules with a default on/off state for eac
 | Path                                          | What it holds                                                                                                    |
 | --------------------------------------------- | ---------------------------------------------------------------------------------------------------------------- |
 | `packages/rules/src/`                         | The pipeline. No dependencies, no Vue, no DOM. Level 1, the eleven level-2 rules, the presets.                    |
+| `packages/rules/src/python-strings.ts`        | Python string semantics JavaScript does not share. Each function is measured against CPython, not read from docs. |
 | `packages/rules/tests/harness/`               | The parser that turns the hand-written examples markdown into tests.                                             |
 | `packages/web/`                               | The Vue app. Imports `packages/rules`; the dependency never runs the other way.                                  |
 | `original-scripts/`                           | The Python being ported. Frozen as provenance (Q7).                                                              |

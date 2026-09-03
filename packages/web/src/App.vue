@@ -30,12 +30,17 @@ const rulesInPipelineOrder = computed(() =>
 );
 
 function runLevel1() {
+  // Q13b: a re-run marks the downstream pane stale, it does not clear it — the
+  // cleaned text is the user's only copy until they re-run level 2. The
+  // staleness affordance itself (dimmed, with a re-run badge) belongs to the UI
+  // issue; what matters here is not cementing the opposite policy.
   reflowed.value = formatLevel1(raw.value);
-  cleaned.value = "";
 }
 
 function runLevel2() {
-  cleaned.value = formatLevel2(reflowed.value, { enabledRuleIds: preset.ruleIds });
+  cleaned.value = formatLevel2(reflowed.value, {
+    enabledRuleIds: preset.ruleIds,
+  });
 }
 </script>
 
