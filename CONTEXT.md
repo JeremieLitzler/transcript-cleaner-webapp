@@ -25,38 +25,38 @@ Level 2 only operates correctly on output that level 1 has produced. That orderi
 
 ## Preset
 
-A **preset** is a named set of level-2 rules with a default on/off state for each. Level 1 has nothing to configure, so presets apply to level 2 alone. v1 ships two: **COGE (English)** and **Universal (any language)** — see *Presets shipped* below.
+A **preset** is a named set of level-2 rules with a default on/off state for each. Level 1 has nothing to configure, so presets apply to level 2 alone. v1 ships two: **COGE (English)** and **Universal (any language)** — see _Presets shipped_ below.
 
 ## Settled scope for v1
 
-- **Rule set** — Corpus-specific now, structured as a named preset. *(Q1)*
-- **Input** — Plain text only: paste into a textarea, plus optional `.txt` drop. *(Q2)*
-- **Language** — Level 1 any language. Level 2 is English-only **by default preset, not by construction** (amended by Q26): eight of its eleven rules key on English literals and cannot fire on other languages, but rules 3, 5 and 9 are language-agnostic and correct anywhere. *(Q3, Q3b, Q26)*
-- **Rule 7 (LLM)** — Out of scope for v1. Postponed, not cancelled. *(Q4)*
-- **Presentation** — Side-by-side input and output. *(Q5)*
-- **Export** — Copy to clipboard **and** download `.txt`. *(Q6)*
-- **Python scripts** — Ported to the webapp; `original-scripts/` frozen as provenance. *(Q7)*
-- **Spec vs. code** — Port the code's behaviour; every divergence recorded as an issue. *(Q8)*
-- **Other script copy** — `coge-transcriptions/transcripts-processing/` stays as it is. *(Q9)*
-- **Stack** — Vue 3 + Vite + TypeScript + Tailwind 4 + Vitest. *(Q10)*
-- **Rule control** — A checkbox per level-2 rule, all on by default. *(Q12)*
-- **Hosting** — Netlify, static only. No `functions` directory until rule 7 has its own round. *(Q11b)*
-- **Stages** — Two visible stages with a gate: level 2 cannot run before level 1. Editing the raw pane marks downstream **stale** (dimmed, with a re-run badge) without clearing it. *(Q13b)*
-- **Middle pane** — The reflowed pane is editable, and "Apply rules" uses its current content, not a fresh level-1 run. It is the repair point between two lossy stages. *(Q13b)*
-- **Verification** — Golden transcripts (`packages/rules/tests/golden-transcripts/`) as the regression net, hand-written examples (`packages/rules/tests/hand-written-examples/`) as the per-rule specification. *(Q15)*
-- **Preset UI** — A preset list. Picking one reveals its rules, all checked; the user unchecks what they do not want. Shape chosen from the prototype: **variant C** — a toolbar chip (`COGE (English) · 11/11 rules`) opening a drawer with presets on the left and rules on the right. Chosen because it leaves the most room for the transcripts. *(Q16, prototype)*
-- **Backlog** — Issues for actionable defects; `docs/port-divergences.md` stays the complete record. *(Q17)*
-- **Build order** — **Two phases.** Phase 1 ports the Python faithfully and all golden pairs must go green byte-for-byte. Phase 2 applies the agreed rule changes and regenerates the goldens. The point of phase 1 is proof that the TypeScript and the Python agree — it cannot be obtained retroactively. *(Q18)*
-- **Golden policy** — Goldens track **desired** behaviour. A golden is only ever regenerated in the same commit as the change that justifies it, with the diff explained in the commit message. A regeneration in its own commit is unreviewable. *(Q19)*
-- **Rule 2 spec** — "Carry related meaning" stays in the spec as an aspiration, implemented when rule 7's machinery exists. The code joins on the bare `and ` prefix. *(Q21)*
-- **Rule 8 spec** — Keep the code's word list; amend the spec to say "a pronoun **or determiner**". The only real-text hit in 1,322 paragraphs uses a determiner (`That his incapacity …`), so narrowing to true pronouns would give rule 8 zero coverage. *(Q21)*
-- **Ellipsis** — `rstrip(".")` is left as it is. L1-03 makes the level-2 case unreachable, and the two ship in the same deliverable. *(Q22)*
-- **Repo layout** — A workspace with two packages: `packages/rules` (pure TypeScript, no dependencies) and `packages/web` (Vue). The rule engine is importable with no UI. *(Q23)*
-- **Tests** — A Vitest suite parses `hand-written-examples/` markdown at run time and generates one test per case. The markdown is the artefact that is maintained; there is no transcribed second copy. `confirmed` and `wont-fix` assert, `unconfirmed` is skipped. Every case is currently `confirmed`. *(Q24)*
-- **Fixture location** — Both the golden transcripts and the hand-written examples live under `packages/rules/tests/`, next to the tests that read them. I had proposed keeping the goldens in `docs/` because Q27 makes them a contract shared with the Python batch tool; that was overruled — proximity to the tests wins, and the Python side reaches across repositories either way. *(Q23, Q24, Q27)*
-- **File drop** — A drop fills the raw pane and stops; it does not run level 1. It marks reflowed and cleaned stale rather than clearing them, matching Q13b's policy for edits. Drops are accepted anywhere on the page and always target the raw pane; per-pane drop targets were rejected because they add a second entry point to the gate. The filename is remembered and reused for the download (`sermon.txt` > `sermon-cleaned.txt`). *(Q25)*
-- **Presets shipped** — **COGE (English)**, all eleven rules. **Universal (any language)**, rules 3, 5 and 9 — the language-agnostic ones. (**Conservative**, from the prototype, is optional.) *(Q26)*
-- **Batch** — Stays Python, in `coge-transcriptions/transcripts-processing/`. It is a rare maintenance operation over a git checkout, and git is its undo. The golden transcripts are asserted against both implementations, so drift is detected rather than prevented. *(Q27)*
+- **Rule set** — Corpus-specific now, structured as a named preset. _(Q1)_
+- **Input** — Plain text only: paste into a textarea, plus optional `.txt` drop. _(Q2)_
+- **Language** — Level 1 any language. Level 2 is English-only **by default preset, not by construction** (amended by Q26): eight of its eleven rules key on English literals and cannot fire on other languages, but rules 3, 5 and 9 are language-agnostic and correct anywhere. _(Q3, Q3b, Q26)_
+- **Rule 7 (LLM)** — Out of scope for v1. Postponed, not cancelled. _(Q4)_
+- **Presentation** — Side-by-side input and output. _(Q5)_
+- **Export** — Copy to clipboard **and** download `.txt`. _(Q6)_
+- **Python scripts** — Ported to the webapp; `original-scripts/` frozen as provenance. _(Q7)_
+- **Spec vs. code** — Port the code's behaviour; every divergence recorded as an issue. _(Q8)_
+- **Other script copy** — `coge-transcriptions/transcripts-processing/` stays as it is. _(Q9)_
+- **Stack** — Vue 3 + Vite + TypeScript + Tailwind 4 + Vitest. _(Q10)_
+- **Rule control** — A checkbox per level-2 rule, all on by default. _(Q12)_
+- **Hosting** — Netlify, static only. No `functions` directory until rule 7 has its own round. _(Q11b)_
+- **Stages** — Two visible stages with a gate: level 2 cannot run before level 1. Editing the raw pane marks downstream **stale** (dimmed, with a re-run badge) without clearing it. _(Q13b)_
+- **Middle pane** — The reflowed pane is editable, and "Apply rules" uses its current content, not a fresh level-1 run. It is the repair point between two lossy stages. _(Q13b)_
+- **Verification** — Golden transcripts (`packages/rules/tests/golden-transcripts/`) as the regression net, hand-written examples (`packages/rules/tests/hand-written-examples/`) as the per-rule specification. _(Q15)_
+- **Preset UI** — A preset list. Picking one reveals its rules, all checked; the user unchecks what they do not want. Shape chosen from the prototype: **variant C** — a toolbar chip (`COGE (English) · 11/11 rules`) opening a drawer with presets on the left and rules on the right. Chosen because it leaves the most room for the transcripts. _(Q16, prototype)_
+- **Backlog** — Issues for actionable defects; `docs/port-divergences.md` stays the complete record. _(Q17)_
+- **Build order** — **Two phases.** Phase 1 ports the Python faithfully and all golden pairs must go green byte-for-byte. Phase 2 applies the agreed rule changes and regenerates the goldens. The point of phase 1 is proof that the TypeScript and the Python agree — it cannot be obtained retroactively. _(Q18)_
+- **Golden policy** — Goldens track **desired** behaviour. A golden is only ever regenerated in the same commit as the change that justifies it, with the diff explained in the commit message. A regeneration in its own commit is unreviewable. _(Q19)_
+- **Rule 2 spec** — "Carry related meaning" stays in the spec as an aspiration, implemented when rule 7's machinery exists. The code joins on the bare `and ` prefix. _(Q21)_
+- **Rule 8 spec** — Keep the code's word list; amend the spec to say "a pronoun **or determiner**". The only real-text hit in 1,322 paragraphs uses a determiner (`That his incapacity …`), so narrowing to true pronouns would give rule 8 zero coverage. _(Q21)_
+- **Ellipsis** — `rstrip(".")` is left as it is. L1-03 makes the level-2 case unreachable, and the two ship in the same deliverable. _(Q22)_
+- **Repo layout** — A workspace with two packages: `packages/rules` (pure TypeScript, no dependencies) and `packages/web` (Vue). The rule engine is importable with no UI. _(Q23)_
+- **Tests** — A Vitest suite parses `hand-written-examples/` markdown at run time and generates one test per case. The markdown is the artefact that is maintained; there is no transcribed second copy. `confirmed` and `wont-fix` assert, `unconfirmed` is skipped. Every case is currently `confirmed`. _(Q24)_
+- **Fixture location** — Both the golden transcripts and the hand-written examples live under `packages/rules/tests/`, next to the tests that read them. I had proposed keeping the goldens in `docs/` because Q27 makes them a contract shared with the Python batch tool; that was overruled — proximity to the tests wins, and the Python side reaches across repositories either way. _(Q23, Q24, Q27)_
+- **File drop** — A drop fills the raw pane and stops; it does not run level 1. It marks reflowed and cleaned stale rather than clearing them, matching Q13b's policy for edits. Drops are accepted anywhere on the page and always target the raw pane; per-pane drop targets were rejected because they add a second entry point to the gate. The filename is remembered and reused for the download (`sermon.txt` > `sermon-cleaned.txt`). _(Q25)_
+- **Presets shipped** — **COGE (English)**, all eleven rules. **Universal (any language)**, rules 3, 5 and 9 — the language-agnostic ones. (**Conservative**, from the prototype, is optional.) _(Q26)_
+- **Batch** — Stays Python, in `coge-transcriptions/transcripts-processing/`. It is a rare maintenance operation over a git checkout, and git is its undo. The golden transcripts are asserted against both implementations, so drift is detected rather than prevented. _(Q27)_
 
 ## Deferred to v2
 
@@ -84,4 +84,4 @@ Two facts that are not obvious from the code and cost time to rediscover:
 
 ## Related repos
 
-- **`coge-transcriptions`** — the corpus these rules were written for. Holds the authoritative prose spec at `docs/formatting/README.md`, and a second copy of both scripts at `transcripts-processing/`. That copy stays; it is the batch tool.
+- **`coge-transcriptions`** (private) — the corpus these rules were written for. Holds the authoritative prose spec at `docs/formatting/README.md`, and a second copy of both scripts at `transcripts-processing/`. That copy stays; it is the batch tool.
