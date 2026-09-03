@@ -1,0 +1,32 @@
+# https://docs.github.com/code-security/dependabot/dependabot-version-updates/configuration-options-for-the-dependabot.yml-file
+#
+# No `labels:` block on purpose. Dependabot applies `dependencies` by default
+# and creates that label itself if it is missing, so naming a label here only
+# adds a way to get it wrong — a label that does not exist is skipped silently,
+# which is how the reference repo's `npm dependencies` would have failed here.
+version: 2
+updates:
+  # `directory: "/"` is the whole workspace, not just the root manifest: npm
+  # workspaces are declared in the root `package.json` and resolved from the
+  # single root `package-lock.json`, so this covers `packages/rules` and
+  # `packages/web` too.
+  #
+  # `target-branch` is spelled out rather than left to the default branch: a
+  # dependency bump is day-to-day work, and day-to-day work lands on `develop`
+  # (issue #13). Opening these against `main` would push them straight at the
+  # release branch.
+  - package-ecosystem: 'npm'
+    directory: '/'
+    target-branch: 'develop'
+    schedule:
+      interval: 'weekly'
+    open-pull-requests-limit: 5
+
+  # Without this, the action pins in `.github/workflows/` are frozen at whatever
+  # they were on the day they were written, because nobody bumps them by hand.
+  - package-ecosystem: 'github-actions'
+    directory: '/'
+    target-branch: 'develop'
+    schedule:
+      interval: 'weekly'
+    open-pull-requests-limit: 5
