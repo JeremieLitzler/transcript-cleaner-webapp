@@ -21,10 +21,27 @@ An npm workspace: `packages/rules` is the pipeline, with no dependencies and no 
 
 ```bash
 npm install
-npm test          # the golden pairs and the hand-written examples
-npm run typecheck # both packages
-npm run dev       # the web app, on Vite's default port
 ```
+
+**Run the app**
+
+| Command | What it does |
+| --- | --- |
+| `npm start` | The app in dev mode, with hot reload, on <http://localhost:5173>. Alias of `npm run dev`. |
+| `npm run dev` | The same thing, named the way Vite names it. |
+| `npm run preview` | Builds for production and serves the result on <http://localhost:4173>. What Netlify will serve. |
+| `npm run build` | Builds every package that has a build. Output in `packages/web/dist/`. |
+
+In dev the app imports `packages/rules` **from source**, so a change to a rule reloads the page without a build step.
+
+**Run the tests**
+
+| Command | What it does |
+| --- | --- |
+| `npm test` | The whole suite, once. |
+| `npm run test:watch` | The same suite, re-running on save. |
+| `npm run typecheck` | Both packages, `tsc` for the rules and `vue-tsc` for the app. |
+| `npm run check` | Typecheck then test — what to run before pushing. |
 
 `npm test` reads its fixtures straight out of `packages/rules/tests/`. The hand-written examples are parsed from markdown at run time, so a case is added by writing it in the markdown and nowhere else.
 
