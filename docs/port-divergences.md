@@ -173,9 +173,14 @@ Every file in `packages/rules/tests/golden-transcripts/` ends its lines with `\r
 
 The port must normalise `\r\n` and bare `\r` to `\n` before splitting. This is not a divergence from the Python; it is a divergence the port will introduce if nobody writes it down.
 
-### L1-06 — trailing-newline convention — _new, minor_
+### L1-06 — trailing-newline convention — _settled during the phase-1 port_
 
-`format_transcription.py` ends with `.rstrip()`, so the Python output has no final newline. The golden files as committed do have one. This is the only difference between the Python's output and the committed goldens — content is otherwise byte-identical for all three pairs. Whatever the port does, the comparison in the test suite has to state which convention it asserts.
+`format_transcription.py` ends with `.rstrip()`, so the Python output has no final newline. The golden files as committed do have one. This is the only difference between the Python's output and the committed goldens — content is otherwise byte-identical for all three pairs.
+
+**Settled:** `formatLevel1` and `formatLevel2` return text with **no** trailing newline, keeping the Python's convention. Adding one is a decision for whoever writes a file — the download in the webapp, or the Python batch tool — not for the rule engine, which has no idea whether its output is a file or a textarea.
+
+The comparison in `packages/rules/tests/golden-transcripts.test.ts` therefore normalises the golden on the way in: line endings to `
+` (L1-05), then **one** trailing newline removed. Nothing else is stripped, so any other whitespace difference still fails.
 
 ---
 

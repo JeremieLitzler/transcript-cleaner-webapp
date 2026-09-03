@@ -34,7 +34,9 @@ OUT
 
 Status: confirmed
 
-Your words: "Why wrong input? The OUT in the example is correct." Not a defect. Asserted so it stays.
+Runs: level-2
+
+Your words: "Why wrong input? The OUT in the example is correct." Not a defect. Asserted so it stays. The `OUT` is the whole pipeline's, not rule 2's alone — rule 5 capitalises the joined `and` afterwards, which is what makes the incorrect join look deliberate.
 
 IN
 
@@ -55,6 +57,9 @@ Is that so? And yet here we are.
 ## L2-R0X-01 — `rstrip(".")` removes every trailing dot, not one
 
 Status: confirmed — see round v04
+Runs: rule-2
+
+`L2-R0X` names a quirk of `joined_onto_last` shared by rules 2, 4, 8 and 10, so nothing can be inferred from the id; this case exercises it through rule 2.
 
 You said the OUT below is expected. It also deletes the ellipsis, which is the opposite of what L1-03 asks for. Round v04 asks you to reconcile the two.
 
@@ -169,6 +174,7 @@ What is that?  let's see.
 ## L2-R06-01 — rule 6 does not re-examine a joined paragraph
 
 Status: confirmed — to be fixed. Edit by jeremie: I fixed the example.
+Phase: 2
 
 Current behaviour. Your words: "So the second hit must match indeed." After the fix, `and Mr.` joins `John Brisby spoke.` too.
 
@@ -193,6 +199,7 @@ Preserved through Mr. Raymond Cole and Mr. John Brisby spoke.
 ## L2-R06-02 — rule 6 handles only "Mr."
 
 Status: confirmed — scope extension. Edit by jeremie: I fixed the example.
+Phase: 2
 
 Current behaviour. Your words: "Fair point to add support `Mrs.`, `Dr.`, `St.` and initials." This is a change to the spec, not a fix to the code — the spec names only `Mr.` too.
 
@@ -215,6 +222,7 @@ She trained under Dr. Alice Fenwick for a decade.
 ## L2-R08-01 — rule 8 fails when punctuation follows the pronoun
 
 Status: confirmed — to be fixed. Edit by jeremie: I fixed the example.
+Phase: 2
 
 Current behaviour, both halves. Your words: "Let's be consistence then." After the fix both cases join.
 
@@ -258,7 +266,9 @@ He set out the whole argument that this was never about the money.
 
 Status: confirmed wont-fix
 
-Your words: "Won't fix for now." Case differences survive.
+Runs: level-2
+
+Your words: "Won't fix for now." Case differences survive — rule 9 leaves both paragraphs and rule 3 capitalises the second one later in the pipeline, so the `OUT` is the whole pipeline's rather than rule 9's alone.
 
 IN
 
@@ -319,5 +329,7 @@ Second para.
 OUT
 
 ```text
-And second para.
+And
+
+Second para.
 ```
