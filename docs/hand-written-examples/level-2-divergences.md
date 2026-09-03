@@ -2,13 +2,13 @@
 
 One case per `L2-*` entry in `docs/port-divergences.md`, so that every entry in the catalogue is an executed, asserted fact rather than prose that rots. When you fix a divergence, exactly one case here changes, and the diff says what changed.
 
-Every `IN`/`OUT` pair below is the **measured current behaviour** of `original-scripts/format_advanced.py`, not a guess. Where your v03 disposition is to fix the rule, the `OUT` shown is what the code does *today* and the note says what it should become — those are the ones that will flip when the fix lands.
+Every `IN`/`OUT` pair below is the **measured current behaviour** of `original-scripts/format_advanced.py`, not a guess. Where your v03 disposition is to fix the rule, the `OUT` shown is what the code does _today_ and the note says what it should become — those are the ones that will flip when the fix lands.
 
 ---
 
 ## L2-R11-01 — rule 11 truncates from the first match, including paragraph 1
 
-Status: confirmed wont-fix-as-coded — superseded by your redefinition
+Status: confirmed wont-fix-as-coded — superseded by your redefinition. Edit by Jeremie: Doesn't happen any more.
 
 Current behaviour. Your redefinition (anchor on `The Church of God the Eternal has just presented`) makes this case unreachable, which is the point.
 
@@ -319,7 +319,7 @@ Your "OK for strengthing the rule" still applies — the guard is one line and w
 IN
 
 ```text
-And 
+And
 
 Second para.
 ```

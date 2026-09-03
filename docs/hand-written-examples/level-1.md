@@ -8,7 +8,7 @@ Cases marked `confirmed` carry your explicit v03 wording. The rest need you.
 
 ## L1-BASE — a period ends a paragraph, anything else continues it
 
-Status: unconfirmed
+Status: confirmed
 
 IN
 
@@ -53,7 +53,7 @@ Next sentence here.
 
 ## L1-01-BANG — "!" does not end a paragraph
 
-Status: unconfirmed
+Status: confirmed
 
 Neither golden transcript contains a single `!`, so this half of L1-01 has never been observed on real text. It follows from the same rule, but you have not actually confirmed it.
 
@@ -95,7 +95,7 @@ He said "I will come." Then he left.
 
 ## L1-03 — an ellipsis does not end a paragraph
 
-Status: unconfirmed
+Status: confirmed
 
 Your v03 note: "Match exactly the ellipsis and apply **before** period rule?" This case states the consequence of doing that. It is a behaviour **change** — the current code splits here.
 
@@ -116,7 +116,7 @@ Il a dit... Et puis il est parti.
 
 ## L1-05 — CRLF input reflows identically to LF input
 
-Status: unconfirmed
+Status: confirmed
 
 The raw transcripts in `docs/golden-transcripts/` are all CRLF. A port that splits on `"\n"` alone carries a trailing `\r` into every line, which defeats the period check on every line and collapses the document into one paragraph. This case fails loudly if that regresses.
 
@@ -138,14 +138,14 @@ Nous allons commencer.
 
 ## L1-EMPTY-LINES — blank lines carry no meaning and are discarded
 
-Status: unconfirmed
+Status: confirmed
 
 IN
 
 ```text
 First sentence.
 
-   
+
 Second sentence.
 ```
 
@@ -161,7 +161,7 @@ Second sentence.
 
 ## L1-WHITESPACE — leading and trailing whitespace is stripped
 
-Status: unconfirmed
+Status: confirmed
 
 IN
 

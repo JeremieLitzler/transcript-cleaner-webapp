@@ -1,0 +1,1272 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>PROTOTYPE — Q16 presets &amp; rule toggles</title>
+
+    <!--
+  THROWAWAY PROTOTYPE. Not the app. Do not promote this code.
+
+  Question it answers (Q16, round v03):
+    How do presets and per-rule toggles relate on screen?
+    Your picture: "a list of presets, then once you check a preset it lists the
+    rules, all checked, and the user unchecks the ones he doesn't need."
+
+  Plan: three structurally different variants of that idea, switchable via
+  ?variant=A|B|C, rendered inside the Q13b three-stage gated layout so the
+  panel is judged in context rather than in a vacuum.
+
+    A — Control sidebar   : rules are permanent furniture on the left
+    B — Pipeline flow     : rules are a step between stage 1 and stage 2
+    C — Chip + drawer     : rules are configuration you visit; panes get the room
+
+  VERDICT (2026-09-03): C wins. "Definitely not variant B." C chosen because
+  it leaves the most room for the transcripts. Folded into CONTEXT.md on main
+  as the settled Preset UI shape; this branch is kept as the primary source.
+
+  The eleven rules are really implemented (ported as-is from
+  original-scripts/format_advanced.py, Q18 phase-1 semantics) so unchecking a
+  box visibly changes the output. No tests, no error handling, no persistence.
+-->
+
+    <style>
+      :root {
+        --bg: #f6f6f4;
+        --panel: #fff;
+        --ink: #1b1b19;
+        --muted: #6b6b66;
+        --line: #e0e0da;
+        --accent: #2f5d50;
+        --accent-soft: #e8f0ed;
+        --warn: #8a6d1f;
+        --warn-soft: #fdf6e3;
+        --mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+        --sans: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      html,
+      body {
+        height: 100%;
+      }
+      body {
+        margin: 0;
+        background: var(--bg);
+        color: var(--ink);
+        font: 14px/1.5 var(--sans);
+      }
+      #app {
+        height: 100%;
+        display: flex;
+        flex-direction: column;
+      }
+
+      .protobar {
+        position: fixed;
+        left: 50%;
+        bottom: 18px;
+        transform: translateX(-50%);
+        z-index: 99;
+        display: flex;
+        align-items: center;
+        gap: 2px;
+        background: #111;
+        color: #fff;
+        border-radius: 999px;
+        padding: 4px;
+        box-shadow: 0 6px 24px rgba(0, 0, 0, 0.28);
+        font: 12px/1 var(--sans);
+      }
+      .protobar button {
+        background: none;
+        border: 0;
+        color: #fff;
+        font-size: 15px;
+        cursor: pointer;
+        padding: 7px 12px;
+        border-radius: 999px;
+        line-height: 1;
+      }
+      .protobar button:hover {
+        background: #333;
+      }
+      .protobar .lbl {
+        padding: 0 12px;
+        white-space: nowrap;
+        letter-spacing: 0.02em;
+      }
+      .protobar .lbl b {
+        font-weight: 600;
+      }
+      .protobar .tag {
+        background: #c2410c;
+        color: #fff;
+        border-radius: 999px;
+        padding: 3px 8px;
+        margin-right: 4px;
+        font-size: 10px;
+        font-weight: 700;
+        letter-spacing: 0.06em;
+      }
+
+      .topbar {
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        padding: 10px 16px;
+        background: var(--panel);
+        border-bottom: 1px solid var(--line);
+        flex: 0 0 auto;
+      }
+      .topbar h1 {
+        font-size: 14px;
+        margin: 0;
+        font-weight: 650;
+        letter-spacing: -0.01em;
+      }
+      .topbar .sub {
+        color: var(--muted);
+        font-size: 12px;
+      }
+
+      .btn {
+        font: inherit;
+        font-weight: 550;
+        border: 1px solid var(--accent);
+        background: var(--accent);
+        color: #fff;
+        padding: 7px 14px;
+        border-radius: 7px;
+        cursor: pointer;
+      }
+      .btn:disabled {
+        background: #c9c9c2;
+        border-color: #c9c9c2;
+        color: #fff;
+        cursor: not-allowed;
+      }
+      .btn.ghost {
+        background: transparent;
+        color: var(--accent);
+      }
+      .btn.ghost:disabled {
+        background: transparent;
+        color: #b4b4ad;
+        border-color: #d8d8d2;
+      }
+
+      .badge {
+        font-size: 11px;
+        font-weight: 650;
+        padding: 2px 8px;
+        border-radius: 999px;
+        background: var(--warn-soft);
+        color: var(--warn);
+        border: 1px solid #eadfbd;
+      }
+      .badge.ok {
+        background: var(--accent-soft);
+        color: var(--accent);
+        border-color: #cfe1da;
+      }
+      .badge.lock {
+        background: #f0f0ec;
+        color: var(--muted);
+        border-color: var(--line);
+      }
+
+      .pane {
+        display: flex;
+        flex-direction: column;
+        min-height: 0;
+        min-width: 0;
+        background: var(--panel);
+        border: 1px solid var(--line);
+        border-radius: 10px;
+        overflow: hidden;
+      }
+      .pane header {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 8px 10px;
+        border-bottom: 1px solid var(--line);
+        background: #fbfbf9;
+        flex: 0 0 auto;
+      }
+      .pane header .t {
+        font-weight: 650;
+        font-size: 12px;
+      }
+      .pane header .n {
+        color: var(--muted);
+        font-size: 11px;
+      }
+      .pane header .sp {
+        margin-left: auto;
+      }
+      .pane textarea {
+        flex: 1;
+        min-height: 0;
+        border: 0;
+        outline: none;
+        resize: none;
+        padding: 12px;
+        font: 12px/1.65 var(--mono);
+        color: var(--ink);
+        background: transparent;
+        white-space: pre-wrap;
+      }
+      .pane.stale textarea {
+        background: #fbfaf5;
+        color: #8b8b84;
+      }
+      .pane.locked {
+        opacity: 0.55;
+      }
+      .pane.locked textarea {
+        background: #f4f4f0;
+      }
+
+      .rulehead {
+        font-size: 11px;
+        font-weight: 700;
+        letter-spacing: 0.07em;
+        text-transform: uppercase;
+        color: var(--muted);
+      }
+
+      .preset {
+        display: block;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        padding: 9px 11px;
+        margin-bottom: 7px;
+        cursor: pointer;
+        background: var(--panel);
+      }
+      .preset.on {
+        border-color: var(--accent);
+        background: var(--accent-soft);
+      }
+      .preset .nm {
+        font-weight: 650;
+        font-size: 13px;
+      }
+      .preset .ds {
+        color: var(--muted);
+        font-size: 11.5px;
+        margin-top: 2px;
+      }
+
+      .rule {
+        display: flex;
+        align-items: flex-start;
+        gap: 8px;
+        padding: 5px 2px;
+        font-size: 12.5px;
+      }
+      .rule input {
+        margin-top: 2px;
+        accent-color: var(--accent);
+        flex: 0 0 auto;
+      }
+      .rule .num {
+        color: var(--muted);
+        font-variant-numeric: tabular-nums;
+        flex: 0 0 22px;
+      }
+      .rule .nm {
+        flex: 1;
+        min-width: 0;
+      }
+      .rule .fires {
+        font: 11px var(--mono);
+        color: var(--muted);
+        flex: 0 0 auto;
+        background: #f2f2ee;
+        border-radius: 4px;
+        padding: 1px 6px;
+      }
+      .rule .fires.hot {
+        background: var(--accent-soft);
+        color: var(--accent);
+        font-weight: 700;
+      }
+      .rule.off .nm {
+        color: #a5a5a0;
+        text-decoration: line-through;
+      }
+      .rule .lossy {
+        font-size: 10px;
+        color: var(--warn);
+        font-weight: 700;
+        letter-spacing: 0.04em;
+      }
+      .rule .noop {
+        font-size: 10px;
+        color: var(--muted);
+        font-weight: 700;
+        letter-spacing: 0.04em;
+      }
+
+      .chip {
+        display: inline-flex;
+        align-items: center;
+        gap: 9px;
+        border: 1px solid var(--line);
+        background: var(--panel);
+        border-radius: 999px;
+        padding: 6px 13px;
+        cursor: pointer;
+        font-size: 12.5px;
+      }
+      .chip:hover {
+        border-color: var(--accent);
+      }
+      .chip .cnt {
+        color: var(--muted);
+        font-variant-numeric: tabular-nums;
+      }
+
+      .note {
+        font-size: 11.5px;
+        color: var(--muted);
+        line-height: 1.5;
+      }
+      .note code {
+        font: 11px var(--mono);
+        background: #f0f0ec;
+        padding: 1px 4px;
+        border-radius: 3px;
+      }
+
+      /* ---- Variant A ---- */
+      .A {
+        flex: 1;
+        display: grid;
+        grid-template-columns: 290px 1fr;
+        min-height: 0;
+      }
+      .A .side {
+        border-right: 1px solid var(--line);
+        background: var(--panel);
+        padding: 14px;
+        overflow: auto;
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+      }
+      .A .panes {
+        flex: 1;
+        display: grid;
+        grid-template-columns: 1fr 1fr 1fr;
+        gap: 12px;
+        padding: 12px;
+        min-height: 0;
+      }
+
+      /* ---- Variant B ---- */
+      .B {
+        flex: 1;
+        overflow: auto;
+        padding: 16px 0 90px;
+      }
+      .B .col {
+        max-width: 900px;
+        margin: 0 auto;
+        display: flex;
+        flex-direction: column;
+        gap: 0;
+      }
+      .B .step {
+        height: 210px;
+        display: flex;
+      }
+      .B .step > .pane {
+        flex: 1;
+        min-width: 0;
+      }
+      .B .gap {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 12px 2px;
+      }
+      .B .rulestrip {
+        border: 1px solid var(--line);
+        border-radius: 10px;
+        background: var(--panel);
+        padding: 12px 14px;
+        margin: 4px 0;
+      }
+      .B .chips {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+        margin-top: 9px;
+      }
+      .B .rchip {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        border: 1px solid var(--line);
+        background: #fbfbf9;
+        border-radius: 999px;
+        padding: 4px 10px;
+        font-size: 12px;
+        cursor: pointer;
+      }
+      .B .rchip.on {
+        border-color: var(--accent);
+        background: var(--accent-soft);
+        color: var(--accent);
+        font-weight: 600;
+      }
+      .B .rchip .f {
+        font: 10px var(--mono);
+        opacity: 0.75;
+      }
+      .B .arrow {
+        color: var(--muted);
+        font-size: 18px;
+        text-align: center;
+        line-height: 1;
+      }
+
+      /* ---- Variant C ---- */
+      .C {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        min-height: 0;
+      }
+      .C .panes {
+        flex: 1;
+        display: grid;
+        grid-template-columns: 1fr 1fr 1fr;
+        gap: 10px;
+        padding: 10px;
+        min-height: 0;
+      }
+      .C .scrim {
+        position: fixed;
+        inset: 0;
+        background: rgba(20, 20, 18, 0.34);
+        z-index: 40;
+      }
+      .C .drawer {
+        position: fixed;
+        top: 0;
+        right: 0;
+        bottom: 0;
+        width: min(620px, 92vw);
+        background: var(--panel);
+        z-index: 41;
+        box-shadow: -12px 0 40px rgba(0, 0, 0, 0.16);
+        display: grid;
+        grid-template-rows: auto 1fr;
+      }
+      .C .drawer .dh {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 14px 16px;
+        border-bottom: 1px solid var(--line);
+      }
+      .C .drawer .dh h2 {
+        font-size: 14px;
+        margin: 0;
+      }
+      .C .drawer .body {
+        display: grid;
+        grid-template-columns: 230px 1fr;
+        min-height: 0;
+      }
+      .C .drawer .body .l {
+        border-right: 1px solid var(--line);
+        padding: 14px;
+        overflow: auto;
+      }
+      .C .drawer .body .r {
+        padding: 14px;
+        overflow: auto;
+      }
+      .C .x {
+        margin-left: auto;
+        background: none;
+        border: 0;
+        font-size: 20px;
+        cursor: pointer;
+        color: var(--muted);
+        line-height: 1;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="app"></div>
+    <div class="protobar" id="protobar"></div>
+
+    <script>
+      /* ============================================================
+   Seed text — a real excerpt from
+   docs/golden-transcripts/english-raw-vibe-transcript.md,
+   plus a few synthetic lines so the rules that never fire on
+   real text (2, 4, 6, 8) still do something when you toggle them.
+   ============================================================ */
+      const SEED = [
+        "The Church of God the Eternal presents What is Partiality?",
+        "A message given by Mr. John Brisby in Eugene, Oregon, August 22, 2026.",
+        "Well, in some recent visits with brethren around the country, and it's very often that I will have conversations, questions, or just sharing information that brings certain principles to mind that I didn't have in my mind at all.",
+        "And through the course of that interaction with brethren, an important point will come out, and all of a sudden it crystallizes.",
+        "And I think it is of value.",
+        "And I'm asking the question by the way of a title, what is partiality?",
+        "What is partiality?",
+        "I don't remember ever doing a sermon on the topic myself.",
+        "Let's start in James 3, verse 17.",
+        "Let's start in James 3, verse 17.",
+        "without preferring one before another.",
+        "My personal resolve, brethren, is that I will tenaciously defend the truth that God has preserved through Mr.",
+        "Raymond Cole all of these years.",
+        "And they all proved sooner or later.",
+        "That they didn't really love it.",
+        "But they haven't.",
+        "But no one else has.",
+        "If we do brethren.",
+        "Then you have no reason to doubt.",
+        "and especially for those of you, that are looking to me for that leadership.",
+        "What is that foundation? let's do a quick summary.",
+        "The Church of God",
+        "the Eternal",
+        "has just presented",
+        "What is Partiality?",
+        "A message given",
+        "by Mr. John Brisby",
+        "in Eugene, Oregon",
+        "August 22nd, 2026.",
+      ].join("\r\n"); // CRLF on purpose — L1-05 lives here
+
+      /* ============================================================
+   The pipeline, ported as-is from the Python (Q18 phase 1).
+   ============================================================ */
+      const norm = (t) => t.replace(/\r\n?/g, "\n");
+
+      function reflow(raw) {
+        return norm(raw)
+          .split("\n")
+          .map((line) => {
+            const s = line.trim();
+            if (!s) return "";
+            return s.endsWith(".") ? s + "\n\n" : s + " ";
+          })
+          .join("")
+          .replace(/\s+$/, "");
+      }
+
+      const toParas = (t) =>
+        norm(t)
+          .trim()
+          .split(/\n\n+/)
+          .map((p) => p.trim())
+          .filter(Boolean);
+      const toText = (ps) => ps.join("\n\n");
+      const joinLast = (ps, sep, cont) => [
+        ...ps.slice(0, -1),
+        ps[ps.length - 1].replace(/\.+$/, "") + sep + cont,
+      ];
+
+      const TRAILER = "The Church of God the Eternal.";
+      const PRONOUNS = new Set([
+        "he",
+        "she",
+        "it",
+        "they",
+        "we",
+        "i",
+        "you",
+        "his",
+        "her",
+        "their",
+        "our",
+        "my",
+        "your",
+        "this",
+        "these",
+        "those",
+      ]);
+      const THEN_EXC = new Set([
+        "how",
+        "what",
+        "why",
+        "when",
+        "where",
+        "who",
+        "lastly",
+      ]);
+      const firstWord = (t) =>
+        t
+          .split(/\s+/)[0]
+          .replace(/[^a-zA-Z]/g, "")
+          .toLowerCase();
+
+      const RULES = [
+        {
+          id: "r11",
+          n: 11,
+          name: "Remove ending generic",
+          lossy: true,
+          note: "Truncates from the trailer onward.",
+          fn: (ps) => {
+            const i = ps.indexOf(TRAILER);
+            return i === -1 ? ps : ps.slice(0, i);
+          },
+        },
+
+        {
+          id: "r9",
+          n: 9,
+          name: "Remove repeating sentence",
+          lossy: true,
+          fn: (ps) => ps.filter((p, i) => i === 0 || p !== ps[i - 1]),
+        },
+
+        {
+          id: "r6",
+          n: 6,
+          name: '"Mr." shouldn\'t add new line',
+          fn: (ps) => {
+            const out = [];
+            let i = 0;
+            while (i < ps.length) {
+              if (ps[i].endsWith("Mr.") && i + 1 < ps.length) {
+                out.push(ps[i] + " " + ps[i + 1]);
+                i += 2;
+              } else {
+                out.push(ps[i]);
+                i += 1;
+              }
+            }
+            return out;
+          },
+        },
+
+        {
+          id: "r2",
+          n: 2,
+          name: '"and" into one sentence',
+          fn: (ps) =>
+            ps.reduce(
+              (out, p) =>
+                p.startsWith("and ") && out.length
+                  ? joinLast(out, " ", p)
+                  : [...out, p],
+              [],
+            ),
+        },
+
+        {
+          id: "r10",
+          n: 10,
+          name: '"Then" joins the previous',
+          lossy: true,
+          fn: (ps) =>
+            ps.reduce(
+              (out, p) =>
+                p.startsWith("Then ") &&
+                !THEN_EXC.has(firstWord(p.slice(5))) &&
+                out.length
+                  ? joinLast(out, " then ", p.slice(5))
+                  : [...out, p],
+              [],
+            ),
+        },
+
+        {
+          id: "r8",
+          n: 8,
+          name: "That + pronoun joins",
+          fn: (ps) =>
+            ps.reduce((out, p) => {
+              const w = p.split(/\s+/);
+              return w.length >= 2 &&
+                w[0] === "That" &&
+                PRONOUNS.has(w[1].toLowerCase()) &&
+                out.length
+                ? joinLast(out, " that ", w.slice(1).join(" "))
+                : [...out, p];
+            }, []),
+        },
+
+        {
+          id: "r4",
+          n: 4,
+          name: 'But…But joins with "and"',
+          fn: (ps) =>
+            ps.reduce(
+              (out, p) =>
+                p.startsWith("But ") &&
+                out.length &&
+                out[out.length - 1].startsWith("But ")
+                  ? joinLast(out, " and ", p.slice(4))
+                  : [...out, p],
+              [],
+            ),
+        },
+
+        {
+          id: "r7",
+          n: 7,
+          name: "Sentence without verb",
+          noop: true,
+          note: "No-op until rule 7 gets its own round.",
+          fn: (ps) => ps,
+        },
+
+        {
+          id: "r1",
+          n: 1,
+          name: 'Remove leading "And"',
+          fn: (ps) =>
+            ps.map((p) =>
+              p.startsWith("And ")
+                ? p.slice(4).charAt(0).toUpperCase() + p.slice(5)
+                : p,
+            ),
+        },
+
+        {
+          id: "r3",
+          n: 3,
+          name: "Uppercase first word on line",
+          fn: (ps) =>
+            ps.map((p) =>
+              p && /[a-z]/.test(p[0]) ? p[0].toUpperCase() + p.slice(1) : p,
+            ),
+        },
+
+        {
+          id: "r5",
+          n: 5,
+          name: 'Uppercase word following "?"',
+          fn: (ps) =>
+            ps.map((p) =>
+              p.replace(/\? ([a-z])/g, (_, c) => "? " + c.toUpperCase()),
+            ),
+        },
+      ];
+
+      const PRESETS = [
+        {
+          id: "coge",
+          name: "COGE (English)",
+          desc: "The sermon-transcript conventions. English only — the rules key on English words.",
+          on: RULES.map((r) => r.id),
+        },
+        {
+          id: "safe",
+          name: "Conservative",
+          desc: "Everything except the three lossy rules. Nothing is deleted, truncated or re-joined.",
+          on: RULES.filter((r) => !r.lossy).map((r) => r.id),
+        },
+      ];
+
+      function applyRules(text, enabled) {
+        let ps = toParas(text);
+        const fires = {};
+        for (const r of RULES) {
+          if (!enabled.has(r.id)) {
+            fires[r.id] = null;
+            continue;
+          }
+          const before = ps;
+          ps = r.fn(ps);
+          // joins and removals change the paragraph count; rewrites change it in place.
+          // Counting positional diffs would report a single deletion as "everything after it moved".
+          let d;
+          if (before.length !== ps.length)
+            d = Math.abs(before.length - ps.length);
+          else {
+            d = 0;
+            for (let i = 0; i < ps.length; i++) if (before[i] !== ps[i]) d++;
+          }
+          fires[r.id] = d;
+        }
+        return { text: toText(ps), fires };
+      }
+
+      /* ============================================================
+   State
+   ============================================================ */
+      const S = {
+        raw: SEED,
+        reflowed: "",
+        cleaned: "",
+        preset: "coge",
+        enabled: new Set(PRESETS[0].on),
+        ranL1: false,
+        staleReflow: false,
+        staleClean: false,
+        fires: {},
+        drawer: false,
+      };
+
+      const el = (t, cls, html) => {
+        const n = document.createElement(t);
+        if (cls) n.className = cls;
+        if (html != null) n.innerHTML = html;
+        return n;
+      };
+
+      function doReflow() {
+        S.reflowed = reflow(S.raw);
+        S.ranL1 = true;
+        S.staleReflow = false;
+        S.cleaned = "";
+        S.staleClean = false;
+        S.fires = {};
+        render();
+      }
+      function doApply() {
+        const r = applyRules(S.reflowed, S.enabled);
+        S.cleaned = r.text;
+        S.fires = r.fires;
+        S.staleClean = false;
+        render();
+      }
+      function pickPreset(id) {
+        S.preset = id;
+        S.enabled = new Set(PRESETS.find((p) => p.id === id).on);
+        if (S.cleaned) S.staleClean = true;
+        render();
+      }
+      function toggleRule(id) {
+        S.enabled.has(id) ? S.enabled.delete(id) : S.enabled.add(id);
+        if (S.cleaned) S.staleClean = true;
+        render();
+      }
+
+      /* ============================================================
+   Shared pieces
+   ============================================================ */
+      function paneEl({
+        id,
+        title,
+        sub,
+        value,
+        readonly,
+        stale,
+        locked,
+        onInput,
+      }) {
+        const p = el(
+          "div",
+          "pane" + (stale ? " stale" : "") + (locked ? " locked" : ""),
+        );
+        const h = el("header");
+        h.append(el("span", "t", title), el("span", "n", sub));
+        const sp = el("span", "sp");
+        h.append(sp);
+        if (locked) h.append(el("span", "badge lock", "locked"));
+        else if (stale) h.append(el("span", "badge", "stale — re-run"));
+        else if (value) h.append(el("span", "badge ok", "current"));
+        const ta = el("textarea");
+        ta.id = id;
+        ta.value = value;
+        ta.spellcheck = false;
+        if (readonly) ta.readOnly = true;
+        if (onInput)
+          ta.addEventListener("input", (e) => onInput(e.target.value));
+        p.append(h, ta);
+        return p;
+      }
+
+      function rawPane() {
+        return paneEl({
+          id: "ta-raw",
+          title: "Raw transcript",
+          sub: "paste from Vibe",
+          value: S.raw,
+          stale: false,
+          onInput: (v) => {
+            S.raw = v;
+            if (S.ranL1) {
+              S.staleReflow = true;
+              if (S.cleaned) S.staleClean = true;
+            }
+            markStale();
+          },
+        });
+      }
+      function reflowedPane() {
+        return paneEl({
+          id: "ta-reflowed",
+          title: "Reflowed transcript",
+          sub: "level 1 · editable",
+          value: S.reflowed,
+          locked: !S.ranL1,
+          stale: S.staleReflow,
+          onInput: (v) => {
+            S.reflowed = v;
+            if (S.cleaned) S.staleClean = true;
+            markStale();
+          },
+        });
+      }
+      function cleanedPane() {
+        return paneEl({
+          id: "ta-cleaned",
+          title: "Cleaned transcript",
+          sub: "level 2 · read-only",
+          value: S.cleaned,
+          readonly: true,
+          locked: !S.cleaned,
+          stale: S.staleClean,
+        });
+      }
+
+      /* update only the badges/classes, so typing never loses the caret */
+      function markStale() {
+        const set = (paneId, stale, locked, has) => {
+          const ta = document.getElementById(paneId);
+          if (!ta) return;
+          const pane = ta.closest(".pane");
+          pane.classList.toggle("stale", !!stale);
+          const b = pane.querySelector(".badge");
+          if (b) {
+            b.className = "badge" + (locked ? " lock" : stale ? "" : " ok");
+            b.textContent = locked
+              ? "locked"
+              : stale
+                ? "stale — re-run"
+                : has
+                  ? "current"
+                  : "";
+          }
+        };
+        set("ta-reflowed", S.staleReflow, !S.ranL1, !!S.reflowed);
+        set("ta-cleaned", S.staleClean, !S.cleaned, !!S.cleaned);
+      }
+
+      function reflowBtn() {
+        const b = el("button", "btn", "Reflow");
+        b.id = "btn-reflow";
+        b.onclick = doReflow;
+        return b;
+      }
+      function applyBtn() {
+        const b = el(
+          "button",
+          "btn" + (S.ranL1 ? "" : " ghost"),
+          "Apply rules",
+        );
+        b.id = "btn-apply";
+        b.disabled = !S.ranL1;
+        b.onclick = doApply;
+        if (!S.ranL1) b.title = "Level 1 must run first";
+        return b;
+      }
+
+      function presetList() {
+        const wrap = el("div");
+        for (const p of PRESETS) {
+          const on = S.preset === p.id;
+          const b = el("label", "preset" + (on ? " on" : ""));
+          b.innerHTML = `<div class="nm">${on ? "◉" : "○"} ${p.name}</div><div class="ds">${p.desc}</div>`;
+          b.onclick = () => pickPreset(p.id);
+          wrap.append(b);
+        }
+        return wrap;
+      }
+
+      function ruleList() {
+        const wrap = el("div");
+        for (const r of RULES) {
+          const on = S.enabled.has(r.id);
+          const f = S.fires[r.id];
+          const row = el("label", "rule" + (on ? "" : " off"));
+          const cb = el("input");
+          cb.type = "checkbox";
+          cb.checked = on;
+          cb.onchange = () => toggleRule(r.id);
+          const nm = el(
+            "span",
+            "nm",
+            r.name +
+              (r.lossy ? ' <span class="lossy">LOSSY</span>' : "") +
+              (r.noop ? ' <span class="noop">NO-OP</span>' : ""),
+          );
+          row.append(cb, el("span", "num", r.n + "."), nm);
+          if (f != null)
+            row.append(
+              el(
+                "span",
+                "fires" + (f > 0 ? " hot" : ""),
+                f > 0 ? f + "×" : "0",
+              ),
+            );
+          wrap.append(row);
+        }
+        return wrap;
+      }
+
+      const enabledCount = () =>
+        RULES.filter((r) => S.enabled.has(r.id)).length;
+
+      function firesNote() {
+        if (!Object.keys(S.fires).length) return el("div", "note", "");
+        return el(
+          "div",
+          "note",
+          `Counts are paragraphs touched, this run. Rule 11 reads <code>0</code> on real
+     transcripts — its anchor is the exact paragraph <code>The Church of God the
+     Eternal.</code>, which level 1 never produces (Finding 4).`,
+        );
+      }
+
+      /* ============================================================
+   Variants
+   ============================================================ */
+      const VARIANTS = {
+        A: {
+          title: "Control sidebar",
+          build() {
+            const root = el("div", "A");
+            const side = el("div", "side");
+
+            const s1 = el("div");
+            s1.append(el("div", "rulehead", "Preset"), presetList());
+            const s2 = el("div");
+            const hd = el(
+              "div",
+              "rulehead",
+              `Rules — ${enabledCount()} of ${RULES.length} on`,
+            );
+            s2.append(hd, ruleList(), firesNote());
+            side.append(s1, s2);
+
+            const panes = el("div", "panes");
+            panes.append(rawPane(), reflowedPane(), cleanedPane());
+
+            const bar = el("div");
+            bar.style.cssText = "display:flex;gap:8px;padding:0 12px 12px";
+            bar.append(reflowBtn(), applyBtn());
+
+            const right = el("div");
+            right.style.cssText =
+              "display:flex;flex-direction:column;min-height:0;overflow:hidden";
+            right.append(panes, bar);
+
+            root.append(side, right);
+            return root;
+          },
+        },
+
+        B: {
+          title: "Pipeline flow",
+          build() {
+            const root = el("div", "B");
+            const col = el("div", "col");
+
+            const s1 = el("div", "step");
+            s1.append(rawPane());
+            const g1 = el("div", "gap");
+            g1.append(
+              reflowBtn(),
+              el("span", "note", "Level 1 · reflow. Works on any language."),
+            );
+
+            const s2 = el("div", "step");
+            s2.append(reflowedPane());
+
+            const strip = el("div", "rulestrip");
+            const top = el("div");
+            top.style.cssText =
+              "display:flex;align-items:center;gap:10px;flex-wrap:wrap";
+            const sel = el("select");
+            sel.style.cssText =
+              "font:inherit;padding:5px 8px;border-radius:7px;border:1px solid var(--line)";
+            for (const p of PRESETS) {
+              const o = el("option", null, p.name);
+              o.value = p.id;
+              if (p.id === S.preset) o.selected = true;
+              sel.append(o);
+            }
+            sel.onchange = (e) => pickPreset(e.target.value);
+            top.append(
+              el("span", "rulehead", "Preset"),
+              sel,
+              el(
+                "span",
+                "note",
+                `${enabledCount()} of ${RULES.length} rules on · ${PRESETS.find((p) => p.id === S.preset).desc}`,
+              ),
+            );
+            const chips = el("div", "chips");
+            for (const r of RULES) {
+              const on = S.enabled.has(r.id);
+              const f = S.fires[r.id];
+              const c = el(
+                "span",
+                "rchip" + (on ? " on" : ""),
+                `${on ? "✓" : "○"} ${r.n}. ${r.name}` +
+                  (f != null && f > 0 ? ` <span class="f">${f}×</span>` : ""),
+              );
+              c.onclick = () => toggleRule(r.id);
+              chips.append(c);
+            }
+            strip.append(top, chips);
+
+            const g2 = el("div", "gap");
+            g2.append(
+              applyBtn(),
+              el("span", "note", "Level 2 · advanced rules. English only."),
+            );
+            const s3 = el("div", "step");
+            s3.append(cleanedPane());
+
+            col.append(
+              s1,
+              el("div", "arrow", "↓"),
+              g1,
+              s2,
+              el("div", "arrow", "↓"),
+              strip,
+              g2,
+              el("div", "arrow", "↓"),
+              s3,
+              firesNote(),
+            );
+            root.append(col);
+            return root;
+          },
+        },
+
+        C: {
+          title: "Chip + drawer",
+          build() {
+            const root = el("div", "C");
+
+            const top = el("div", "topbar");
+            const chip = el(
+              "span",
+              "chip",
+              `<b>${PRESETS.find((p) => p.id === S.preset).name}</b> <span class="cnt">${enabledCount()}/${RULES.length} rules</span> <span style="color:var(--muted)">▸</span>`,
+            );
+            chip.onclick = () => {
+              S.drawer = true;
+              render();
+            };
+            top.append(reflowBtn(), applyBtn(), chip);
+            root.append(top);
+
+            const panes = el("div", "panes");
+            panes.append(rawPane(), reflowedPane(), cleanedPane());
+            root.append(panes);
+
+            if (S.drawer) {
+              const scrim = el("div", "scrim");
+              scrim.onclick = () => {
+                S.drawer = false;
+                render();
+              };
+              const d = el("div", "drawer");
+              const dh = el("div", "dh");
+              dh.append(el("h2", null, "Rules"));
+              const x = el("button", "x", "×");
+              x.onclick = () => {
+                S.drawer = false;
+                render();
+              };
+              dh.append(x);
+              const body = el("div", "body");
+              const l = el("div", "l");
+              l.append(el("div", "rulehead", "Presets"), presetList());
+              const r = el("div", "r");
+              r.append(
+                el(
+                  "div",
+                  "rulehead",
+                  `${enabledCount()} of ${RULES.length} on`,
+                ),
+                ruleList(),
+                firesNote(),
+              );
+              body.append(l, r);
+              d.append(dh, body);
+              root.append(scrim, d);
+            }
+            return root;
+          },
+        },
+      };
+
+      /* ============================================================
+   Switcher
+   ============================================================ */
+      const KEYS = Object.keys(VARIANTS);
+      const current = () => {
+        const v = (
+          new URLSearchParams(location.search).get("variant") || "A"
+        ).toUpperCase();
+        return KEYS.includes(v) ? v : "A";
+      };
+      function go(v) {
+        const u = new URL(location.href);
+        u.searchParams.set("variant", v);
+        history.replaceState(null, "", u);
+        S.drawer = false;
+        render();
+      }
+      function cycle(d) {
+        const i = KEYS.indexOf(current());
+        go(KEYS[(i + d + KEYS.length) % KEYS.length]);
+      }
+
+      function render() {
+        const v = current();
+        const app = document.getElementById("app");
+        app.innerHTML = "";
+
+        if (v !== "C") {
+          const top = el("div", "topbar");
+          top.append(
+            el("h1", null, "Transcript Cleaner"),
+            el("span", "sub", "raw > reflowed > cleaned"),
+          );
+          app.append(top);
+        }
+        app.append(VARIANTS[v].build());
+
+        const bar = document.getElementById("protobar");
+        bar.innerHTML = "";
+        const prev = el("button", null, "←");
+        prev.onclick = () => cycle(-1);
+        const next = el("button", null, "→");
+        next.onclick = () => cycle(1);
+        const lbl = el(
+          "span",
+          "lbl",
+          `<span class="tag">PROTOTYPE</span><b>${v}</b> — ${VARIANTS[v].title}`,
+        );
+        bar.append(prev, lbl, next);
+      }
+
+      addEventListener("keydown", (e) => {
+        const t = e.target;
+        if (
+          t &&
+          (t.tagName === "INPUT" ||
+            t.tagName === "TEXTAREA" ||
+            t.isContentEditable)
+        )
+          return;
+        if (e.key === "ArrowLeft") cycle(-1);
+        if (e.key === "ArrowRight") cycle(1);
+      });
+
+      render();
+    </script>
+  </body>
+</html>
