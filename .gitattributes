@@ -1,0 +1,12 @@
+# Introduced with the vendored release script (issue #13), which is authored and
+# committed from Windows but only ever runs on a Linux runner. A CRLF in the
+# shebang line makes the whole file unrunnable, and that failure is a repo
+# property, not a property of whoever's `core.autocrlf` happened to be set.
+*.sh text eol=lf
+
+# The golden transcripts are byte-for-byte fixtures, and their line endings are
+# part of what they assert: the two Vibe files and the French pair are CRLF,
+# example 2 is LF. Marked `-text` so no present or future normalisation rule can
+# quietly rewrite them and turn L1-05 into a test that passes for the wrong
+# reason.
+packages/rules/tests/golden-transcripts/** -text

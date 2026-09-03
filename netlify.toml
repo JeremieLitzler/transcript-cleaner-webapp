@@ -1,0 +1,25 @@
+# Deploy is Netlify's own Git integration, not a GitHub Actions job (issue #13).
+# The two are alternatives: picking both gives one deploy two sources of truth.
+# The integration is what buys the deploy preview per pull request, which is the
+# part that actually pays off for a UI whose whole point is visual (Q16).
+#
+# Connecting the repository in Netlify's UI is a one-time manual step and is not
+# expressed here; this file is only the build contract once it is connected.
+
+[build]
+  # The root script, not `vite build` directly: it runs `--workspaces`, so
+  # `packages/rules` is typechecked on the way past rather than skipped.
+  command = "npm run build"
+  publish = "packages/web/dist"
+
+[build.environment]
+  # Pinned rather than left to Netlify's default image, which moves. Matches
+  # the `lts/*` the PR workflow resolves to.
+  NODE_VERSION = "24"
+
+# Inert today — the app is a single page with no router. Kept so that adding
+# one is a routing change and not also a deploy incident.
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
