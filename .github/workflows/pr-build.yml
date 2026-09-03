@@ -1,0 +1,56 @@
+# Every green run before this workflow existed was a local claim. This is the
+# one that runs somewhere nobody can forget to run it.
+#
+# `npm run check` rather than `npm run test`, because `npm run build` only
+# typechecks `packages/web` (via `vue-tsc`). `packages/rules` has no build step,
+# so its `tsc --noEmit` would never execute in CI otherwise. `check` is
+# typecheck-both-packages then the suite, and it is what the README already
+# names as the command to run before pushing.
+name: PR Test & Build Check
+
+# Both branches of the pair (issue #13): day-to-day pull requests target
+# `develop`, and the release pull request targets `main`. Checking only one of
+# them would leave whichever it is not unguarded.
+on:
+  pull_request:
+    branches:
+      - develop
+      - main
+    types: [opened, synchronize, reopened]
+
+# Nothing here writes to the repo. Say so, rather than inheriting whatever the
+# org default happens to be.
+permissions:
+  contents: read
+
+# A pull request that is pushed to twice in a minute does not need both runs;
+# only the newer answer is worth waiting for.
+concurrency:
+  group: pr-build-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  test-and-build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v7
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: 'lts/*'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Verify package signatures
+        run: npm audit signatures
+
+      - name: Typecheck and test
+        run: npm run check
+
+      - name: Run build
+        run: npm run build
