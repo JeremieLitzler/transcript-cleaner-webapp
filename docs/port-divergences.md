@@ -30,6 +30,8 @@ The **fires on real text?** column is measured, not guessed: each rule was run i
 | L1-02 period inside closing punctuation | **Not a defect.** Intended: the paragraph continues. | n/a |
 | L1-03 ellipsis forces a break | **Fix.** Match the ellipsis explicitly, before the period rule. Ships with L2-R0X-01. | no — zero `...` in any transcript |
 | L1-04 no language-specific behaviour | Not a defect. Recorded to close an assumption. | n/a |
+| L1-05 CRLF must be normalised before splitting | **Port-only. Fixed in phase 1** — a browser does not hide line endings the way Python does. | yes — every CRLF transcript |
+| L1-07 Python vs. JavaScript string methods | **Port-only. Fixed in phase 1** — a divergence between the two implementations is the one defect phase 1 cannot carry. | no — needs a control character, a BOM, or an astral script |
 | L2-R11-01 / -02 rule 11 | **Fix, redefined.** Remove from and including `The Church of God the Eternal has just presented`. | 1x in **both** transcripts, but only once redefined |
 | L2-R02-01 rule 2 ignores the preceding dot | **Not a defect.** The joined output is what you want. | ex.2 — 1x |
 | L2-R02-02 "carry related meaning" | **Keep in the spec as an aspiration**, implemented when rule 7's machinery exists (v04 Q21b). | n/a |
@@ -179,8 +181,24 @@ The port must normalise `\r\n` and bare `\r` to `\n` before splitting. This is n
 
 **Settled:** `formatLevel1` and `formatLevel2` return text with **no** trailing newline, keeping the Python's convention. Adding one is a decision for whoever writes a file — the download in the webapp, or the Python batch tool — not for the rule engine, which has no idea whether its output is a file or a textarea.
 
-The comparison in `packages/rules/tests/golden-transcripts.test.ts` therefore normalises the golden on the way in: line endings to `
-` (L1-05), then **one** trailing newline removed. Nothing else is stripped, so any other whitespace difference still fails.
+The comparison in `packages/rules/tests/golden-transcripts.test.ts` therefore normalises the golden on the way in: line endings to `\n` (L1-05), then **one** trailing newline removed. Nothing else is stripped, so any other whitespace difference still fails.
+
+### L1-07 — Python and JavaScript string methods are not the same methods — _new, found by the phase-1 code review; closed in the port_
+
+The same family as L1-05, and found the same way: not a disagreement between the code and the spec, but a disagreement the port introduces if nobody measures it. `str.strip()`, `str.splitlines()`, `str.split()` and `s[0]` all have JavaScript look-alikes that behave differently, and none of the differences show on ASCII or Latin-1 text — thousands of generated ASCII and Latin-1 cases run through both implementations with zero mismatches. The corpus cannot expose any of this; a pasted transcript can.
+
+Measured against CPython 3.14, all four reachable through the public API:
+
+| What | Python | JavaScript look-alike | Example |
+| --- | --- | --- | --- |
+| Line boundaries | `str.splitlines()` also breaks on `\v`, `\f`, `\x1c`–`\x1e`, `\x85`, `\u2028`, `\u2029` | `split("\n")` sees none of them | `'x\x85y.'` > Python `'x y.'`, naïve TypeScript `'x\x85y.'` |
+| Whitespace | `str.strip()` strips `\x1c`–`\x1f` and `\x85`, keeps the BOM | `trim()` strips the BOM, keeps those | `'\uFEFFbom line.'` > Python keeps the BOM, `trim()` eats it |
+| Indexing | `s[0]` is the first **code point** | `s[0]` is the first UTF-16 **code unit** | Rule 3 on a Deseret opening: Python capitalises, TypeScript takes half a surrogate pair and changes nothing |
+| Bare `split()` | splits on runs, discards leading empties | `split(/\s+/)` yields a leading `''` | `'  a b'` > Python `['a', 'b']`, JavaScript `['', 'a', 'b']` |
+
+The indexing one is the most consequential: rule 3 is one of the three the **Universal (any language)** preset ships as correct in any language, and it would have been silently wrong for every script outside the Basic Multilingual Plane — Deseret, Adlam, Osage, Vithkuqi.
+
+**Closed in the port**, not deferred: phase 1 exists to prove the two implementations agree, so a divergence between them is the one kind of defect it cannot carry. `packages/rules/src/python-strings.ts` reproduces each Python method, and `packages/rules/tests/python-semantics.test.ts` asserts every row above. A differential fuzz of 6,000 generated documents — each of the characters in this table appearing in over a thousand of them — reports zero mismatches at both levels.
 
 ---
 

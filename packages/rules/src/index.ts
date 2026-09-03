@@ -8,9 +8,9 @@
  * comment on the code that reproduces it.
  */
 
-export { normaliseLineEndings } from "./line-endings.js";
-export { formatLevel1 } from "./level-1.js";
-export { Paragraphs } from "./level-2/paragraphs.js";
+export { normaliseLineEndings } from './line-endings.js';
+export { formatLevel1 } from './level-1.js';
+export { Paragraphs } from './level-2/paragraphs.js';
 export {
   rule1RemoveAnd,
   rule2AndJoin,
@@ -23,7 +23,7 @@ export {
   rule9RemoveDuplicates,
   rule10ThenJoin,
   rule11RemoveTrailer,
-} from "./level-2/rules.js";
+} from './level-2/rules.js';
 export {
   formatLevel2,
   ruleById,
@@ -31,10 +31,10 @@ export {
   type Level2Options,
   type RuleDefinition,
   type RuleId,
-} from "./level-2/pipeline.js";
+} from './level-2/pipeline.js';
 export {
   presetById,
   DEFAULT_PRESET_ID,
   PRESETS,
   type Preset,
-} from "./presets.js";
+} from './presets.js';
