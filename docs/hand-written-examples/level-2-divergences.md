@@ -54,7 +54,7 @@ Is that so? And yet here we are.
 
 ## L2-R0X-01 — `rstrip(".")` removes every trailing dot, not one
 
-Status: unconfirmed — see round v04
+Status: confirmed — see round v04
 
 You said the OUT below is expected. It also deletes the ellipsis, which is the opposite of what L1-03 asks for. Round v04 asks you to reconcile the two.
 
@@ -76,7 +76,7 @@ He paused there and then went on.
 
 ## L2-R03-01 — rule 3 capitalises regardless of what precedes
 
-Status: unconfirmed — to be fixed per spec prose
+Status: confirmed — to be fixed per spec prose
 
 Current behaviour. Per your disposition the spec wins, so after the fix the `OUT` becomes identical to the `IN` (the previous paragraph ends in `?`, not `.`).
 
@@ -100,7 +100,7 @@ Yes it is.
 
 ## L2-R03-02 — rule 3 has no "and" exclusion
 
-Status: unconfirmed — to be fixed per spec prose
+Status: confirmed — to be fixed per spec prose
 
 Current behaviour. After the fix the `OUT` becomes identical to the `IN`.
 
@@ -148,7 +148,7 @@ But they haven't and no one else has and we do.
 
 ## L2-R05-01 — rule 5 matches exactly one space
 
-Status: unconfirmed — to be fixed per spec prose
+Status: confirmed — to be fixed per spec prose. Edit of Jeremie: the current behaviour is what I want.
 
 Current behaviour. Your v03 note gives the target: `"What is that?  Let's see."`
 
@@ -168,7 +168,7 @@ What is that?  let's see.
 
 ## L2-R06-01 — rule 6 does not re-examine a joined paragraph
 
-Status: unconfirmed — to be fixed
+Status: confirmed — to be fixed. Edit by jeremie: I fixed the example.
 
 Current behaviour. Your words: "So the second hit must match indeed." After the fix, `and Mr.` joins `John Brisby spoke.` too.
 
@@ -185,16 +185,14 @@ John Brisby spoke.
 OUT
 
 ```text
-Preserved through Mr. Raymond Cole and Mr.
-
-John Brisby spoke.
+Preserved through Mr. Raymond Cole and Mr. John Brisby spoke.
 ```
 
 ---
 
 ## L2-R06-02 — rule 6 handles only "Mr."
 
-Status: unconfirmed — scope extension
+Status: confirmed — scope extension. Edit by jeremie: I fixed the example.
 
 Current behaviour. Your words: "Fair point to add support `Mrs.`, `Dr.`, `St.` and initials." This is a change to the spec, not a fix to the code — the spec names only `Mr.` too.
 
@@ -209,16 +207,14 @@ Alice Fenwick for a decade.
 OUT
 
 ```text
-She trained under Dr.
-
-Alice Fenwick for a decade.
+She trained under Dr. Alice Fenwick for a decade.
 ```
 
 ---
 
 ## L2-R08-01 — rule 8 fails when punctuation follows the pronoun
 
-Status: unconfirmed — to be fixed
+Status: confirmed — to be fixed. Edit by jeremie: I fixed the example.
 
 Current behaviour, both halves. Your words: "Let's be consistence then." After the fix both cases join.
 
@@ -233,25 +229,21 @@ That they, in the end, didn't love it.
 OUT
 
 ```text
-They all proved sooner or later.
-
-That they, in the end, didn't love it.
+They all proved sooner or later that they, in the end, didn't love it.
 ```
 
 ---
 
 ## L2-R08-02 — `_PRONOUNS` contains determiners and possessives
 
-Status: unconfirmed — see round v04
+Status: confirmed — see round v04. Edit by jeremie: I fixed the example.
 
 Current behaviour with `this` in the list. Round v04 asks whether this join is wanted.
 
 IN
 
 ```text
-He set out the whole argument.
-
-That this was never about the money.
+He set out the whole argument that this was never about the money.
 ```
 
 OUT
@@ -310,7 +302,7 @@ Those are the three pieces then afterwards, in order to know what to do, find th
 
 ## L2-R01-01 — rule 1 on a bare "And" paragraph
 
-Status: confirmed — latent only, does not reproduce through the pipeline
+Status: confirmed — latent only, does not reproduce through the pipeline. Edit by jeremie: I fixed the example.
 
 I claimed in v03 that this raises `IndexError`. Measured, it does not. `Paragraphs.from_text` strips every paragraph, so `"And "` arrives as `"And"`, which fails the `startswith("And ")` test and passes through untouched. The crash is reachable only by calling `rule_1_remove_and` directly with an unstripped paragraph, which nothing does.
 
@@ -327,7 +319,5 @@ Second para.
 OUT
 
 ```text
-And
-
-Second para.
+And second para.
 ```

@@ -33,7 +33,7 @@ A **preset** is a named set of level-2 rules with a default on/off state for eac
 | --- | --- | --- |
 | Rule set | Corpus-specific now, structured as a named preset | Q1 |
 | Input | Plain text only: paste into a textarea, plus optional `.txt` drop | Q2 |
-| Language | Level 1 any language; level 2 English only, stated where rules are chosen | Q3, Q3b |
+| Language | Level 1 any language. Level 2 is English-only **by default preset, not by construction** (amended by Q26): eight of its eleven rules key on English literals and cannot fire on other languages, but rules 3, 5 and 9 are language-agnostic and correct anywhere. | Q3, Q3b, Q26 |
 | Rule 7 (LLM) | Out of scope for v1. Postponed, not cancelled. | Q4 |
 | Presentation | Side-by-side input and output | Q5 |
 | Export | Copy to clipboard **and** download `.txt` | Q6 |
@@ -52,6 +52,12 @@ A **preset** is a named set of level-2 rules with a default on/off state for eac
 | Golden policy | Goldens track **desired** behaviour. A golden is only ever regenerated in the same commit as the change that justifies it, with the diff explained in the commit message. A regeneration in its own commit is unreviewable. | Q19 |
 | Rule 2 spec | "Carry related meaning" stays in the spec as an aspiration, implemented when rule 7's machinery exists. The code joins on the bare `and ` prefix. | Q21 |
 | Rule 8 spec | Keep the code's word list; amend the spec to say "a pronoun **or determiner**". The only real-text hit in 1,322 paragraphs uses a determiner (`That his incapacity …`), so narrowing to true pronouns would give rule 8 zero coverage. | Q21 |
+| Repo layout | A workspace with two packages: `packages/rules` (pure TypeScript, no dependencies) and `packages/web` (Vue). The rule engine is importable with no UI. | Q23 |
+| Tests | A Vitest suite parses `hand-written-examples/` markdown at run time and generates one test per case. The markdown is the artefact that is maintained; there is no transcribed second copy. `confirmed` and `wont-fix` assert, `unconfirmed` is skipped. Every case is currently `confirmed`. | Q24 |
+| Examples location | `docs/hand-written-examples/` moves into `packages/rules/` when the workspace is scaffolded, so cases sit next to the tests that read them. The golden transcripts **stay** at `docs/golden-transcripts/`, because Q27 makes them a contract shared with the Python batch tool rather than one package's fixtures. | Q24, Q27 |
+| File drop | A drop fills the raw pane and stops — it does not run level 1. It marks reflowed and cleaned stale rather than clearing them, matching Q13b's policy for edits. Drops are accepted anywhere on the page and always target the raw pane; per-pane drop targets were rejected because they add a second entry point to the gate. The filename is remembered and reused for the download (`sermon.txt` > `sermon-cleaned.txt`). | Q25 |
+| Presets shipped | **COGE (English)** — all eleven. **Universal (any language)** — rules 3, 5 and 9, the language-agnostic ones. (**Conservative**, from the prototype, is optional.) | Q26 |
+| Batch | Stays Python, in `coge-transcriptions/transcripts-processing/`. It is a rare maintenance operation over a git checkout, and git is its undo. The golden transcripts are asserted against both implementations, so drift is detected rather than prevented. | Q27 |
 | Ellipsis | `rstrip(".")` is left as it is. L1-03 makes the level-2 case unreachable, and the two ship in the same deliverable. | Q22 |
 
 ## Deferred to v2

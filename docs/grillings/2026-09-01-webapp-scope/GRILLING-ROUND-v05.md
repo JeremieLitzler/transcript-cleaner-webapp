@@ -2,10 +2,10 @@
 
 ## Settled in v04
 
-- **Q17 — Issues:** open the recommended set. Done, six issues, [#2](https://github.com/JeremieLitzler/transcript-cleaner-webapp/issues/2)–[#7](https://github.com/JeremieLitzler/transcript-cleaner-webapp/issues/7). I-01 went *inside* the phase-2 issue rather than standing alone, because Q18(b) made phase 2 the container for every rule change and a separate I-01 would have duplicated its acceptance criteria.
+- **Q17 — Issues:** open the recommended set. Done, six issues, [#2](https://github.com/JeremieLitzler/transcript-cleaner-webapp/issues/2)–[#7](https://github.com/JeremieLitzler/transcript-cleaner-webapp/issues/7). I-01 went _inside_ the phase-2 issue rather than standing alone, because Q18(b) made phase 2 the container for every rule change and a separate I-01 would have duplicated its acceptance criteria.
 - **Q18 — What v1 is:** (b). Two phases, two issues. Port faithfully, go green on all three golden pairs, then apply the agreed changes.
 - **Q19 — Golden policy:** (b). Goldens track desired behaviour and are only ever regenerated in the same commit as the change that justifies them.
-- **Q20 — Coverage:** you added the *Do You See Christ?* pair.
+- **Q20 — Coverage:** you added the _Do You See Christ?_ pair.
 - **Q21 — Rule 2 / rule 8:** (b) then (a). "Carry related meaning" stays in the spec as an aspiration awaiting rule 7's machinery; the pronoun list stays as coded and the spec is amended to say "a pronoun or determiner".
 - **Q22 — Ellipsis:** (b), with L1-03 and L2-R0X-01 shipping in the same deliverable.
 - **Prototype — Q16:** variant **C**, the toolbar chip plus drawer, chosen for transcript room. Variants A and B are kept on `prototype/q16-preset-rules` rather than deleted.
@@ -22,7 +22,7 @@
 
 ### Finding 8 — rule 6 can never be covered by real text
 
-Reported last round and now written into `docs/port-divergences.md` and `CONTEXT.md`. Summary: rule 6's trigger is a paragraph *ending* in `Mr.`, which depends on where the transcription tool happened to break a line. Example 2 holds 67 `Mr.` and none at a line end. The spec's own rule 6 example comes from that very sermon but arrives already joined in the current transcription — it was captured from an older run of the same audio. Hand-written example only, permanently. That is [#7](https://github.com/JeremieLitzler/transcript-cleaner-webapp/issues/7).
+Reported last round and now written into `docs/port-divergences.md` and `CONTEXT.md`. Summary: rule 6's trigger is a paragraph _ending_ in `Mr.`, which depends on where the transcription tool happened to break a line. Example 2 holds 67 `Mr.` and none at a line end. The spec's own rule 6 example comes from that very sermon but arrives already joined in the current transcription — it was captured from an older run of the same audio. Hand-written example only, permanently. That is [#7](https://github.com/JeremieLitzler/transcript-cleaner-webapp/issues/7).
 
 ### Finding 9 — level 2 is a complete no-op on your French transcript, and the reason matters
 
@@ -32,11 +32,11 @@ Run level 2 over `french-level1-transcript.md` — 364 paragraphs — and **ever
 
 But that is not a guarantee, and I want to be precise about which half is structural and which half is luck:
 
-| | Rules | Can they fire on French? |
-| --- | --- | --- |
-| Keyed to English literals | 1 (`And `), 2 (`and `), 4 (`But `), 8 (`That` + English pronouns), 10 (`Then `), 6 (`Mr.`), 11 (the COGE trailer) | **No, by construction.** Verified: `Et il est parti.` is untouched by rule 1; `Il a parle avec M.` is untouched by rule 6. |
-| No-op | 7 | No |
-| Language-agnostic | 3 (capitalise first), 5 (capitalise after `?`), 9 (remove duplicate) | **Yes.** Verified: `ensuite, il est parti.` > `Ensuite, …`; `la foi ? c'est` > `la foi ? C'est`; a duplicated French paragraph is removed. |
+|                           | Rules                                                                                                             | Can they fire on French?                                                                                                                   |
+| ------------------------- | ----------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
+| Keyed to English literals | 1 (`And `), 2 (`and `), 4 (`But `), 8 (`That` + English pronouns), 10 (`Then `), 6 (`Mr.`), 11 (the COGE trailer) | **No, by construction.** Verified: `Et il est parti.` is untouched by rule 1; `Il a parle avec M.` is untouched by rule 6.                 |
+| No-op                     | 7                                                                                                                 | No                                                                                                                                         |
+| Language-agnostic         | 3 (capitalise first), 5 (capitalise after `?`), 9 (remove duplicate)                                              | **Yes.** Verified: `ensuite, il est parti.` > `Ensuite, …`; `la foi ? c'est` > `la foi ? C'est`; a duplicated French paragraph is removed. |
 
 So eight of eleven rules cannot touch French at all, and the three that can are **exactly the three that are correct in any language** — capitalise after a full stop, capitalise after a question mark, drop an exact duplicate. French wants all three. They fire zero times on your transcript only because it has no lowercase paragraph starts and no lowercase word after a `?`.
 
@@ -62,6 +62,8 @@ But **take the separation itself, which is the part of (c) worth having.** `src/
 
 ### Answer to Q23
 
+(c)
+
 ---
 
 ## Q24 - How do the hand-written examples become tests?
@@ -83,6 +85,12 @@ The cost is a parser of about forty lines that you have to trust, and a failure 
 **And one wrinkle the format did not anticipate, which your confirmations just exposed.** `L1-05` is the CRLF case, and its `IN` block reads `Bonjour a tous.\r\nNous allons commencer.\r\n` — six visible characters standing in for two invisible ones. Every other block in the folder is literal text. So the parser needs one of: an escape convention applied everywhere (`\r`, `\n`, `\t` interpreted, and a real backslash needing doubling — which makes the other ninety-odd cases slightly less literal); an opt-in marker on the cases that need it, such as `IN (escaped)`; or L1-05 being the one case written by hand in TypeScript, where a real `\r\n` is unremarkable. I lean to the second — it is honest about which blocks are literal and costs one word in one heading — but it is your file format and the choice is yours.
 
 ### Answer to Q24
+
+I reviewed and confirmed the `docs/hand-written-examples/` so that settles `Status: unconfirmed` question.
+
+Regarding `\r`, `\n`, `\t`, I will copy paste transcript from Vibe to the app. Does it settle the format question?
+
+I choose (a) so the `docs/hand-written-examples/` will move the closest to the tests and a the `CONTEXT.md` will state this.
 
 ---
 
@@ -114,6 +122,8 @@ Q2 gave you a textarea plus an optional `.txt` drop. Q13b then gave you three pa
 
 ### Answer to Q25
 
+Recommendation is good.
+
 ---
 
 ## Q26 - Given Finding 9, what should level 2 do about French?
@@ -132,9 +142,11 @@ Q16 already built the machinery: a preset is a named set of checkboxes, and you 
 
 (a) is defensible if you would rather not grow the preset list before the app exists. If you take it, the honest UI copy is not "English transcripts only" but "these rules only affect English transcripts", which is the true statement.
 
-**One consequence to accept with (c):** Q3b said level 2 is English-only, and this amends it. Level 2 becomes English-only *by default preset*, not by construction. `CONTEXT.md` needs that correction.
+**One consequence to accept with (c):** Q3b said level 2 is English-only, and this amends it. Level 2 becomes English-only _by default preset_, not by construction. `CONTEXT.md` needs that correction.
 
 ### Answer to Q26
+
+Ok for (c)
 
 ---
 
@@ -158,6 +170,8 @@ The cost of (a) is the drift that Q7 was trying to prevent by having one impleme
 
 ### Answer to Q27
 
+(a) indeed.
+
 ---
 
 ## Q28 - What does the README become?
@@ -178,6 +192,8 @@ The one sentence that has to change is "clean any transcript". The true version 
 
 ### Answer to Q28
 
+(b)
+
 ---
 
 ## Held for v06
@@ -185,3 +201,11 @@ The one sentence that has to change is "clean any transcript". The true version 
 Only one thing is deliberately not asked, because it depends on Q23 and Q24 landing first: **what the first commit on [#2](https://github.com/JeremieLitzler/transcript-cleaner-webapp/issues/2) actually contains** — whether the Vite scaffold, the rule port and the test harness arrive together or in sequence. That is a sequencing question for the build, not a scope question, and it is better answered by starting than by discussing.
 
 After this round the scope grilling is finished. Everything remaining is tracked in the six issues.
+
+### Answer to Sequencing Question
+
+Here is the sequence:
+
+- Vite scaffold,
+- rule port
+- and the test harness

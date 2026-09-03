@@ -1,6 +1,6 @@
 # Level 2 — one case per rule, in isolation
 
-Transcribed from `coge-transcriptions/docs/formatting/README.md`. Every case is `unconfirmed` until you say otherwise — I have not invented behaviour here, but I have made choices about where each example starts and stops, and those choices are worth a read.
+Transcribed from `coge-transcriptions/docs/formatting/README.md`, then reviewed and confirmed by Jérémie (v05). Rule 11's two cases are not the spec's — they use the v03 redefinition, because the spec's anchor never occurs in real level-1 output.
 
 Cases are numbered by rule, not by pipeline position.
 
@@ -8,7 +8,7 @@ Cases are numbered by rule, not by pipeline position.
 
 ## RULE-01 — remove a leading "And" and capitalise the next word
 
-Status: unconfirmed
+Status: confirmed
 
 IN
 
@@ -26,7 +26,7 @@ People have a right, the people of God have a right to be assured, to know where
 
 ## RULE-02 — join a paragraph starting with lowercase "and"
 
-Status: unconfirmed
+Status: confirmed
 
 Note: the spec's own output for this case still begins with "And", which rule 1 would strip if the pipeline ran. In isolation, rule 2 leaves it.
 
@@ -48,7 +48,7 @@ And people have a right, the people of God have a right to be assured, to know w
 
 ## RULE-03 — capitalise a paragraph that starts lowercase
 
-Status: unconfirmed
+Status: confirmed
 
 Per your v03 disposition this rule now follows the spec prose: the previous paragraph must end with a period, and a leading "and" in any case is excluded.
 
@@ -72,7 +72,7 @@ You have respect for him because you have respect for that that he has preserved
 
 ## RULE-04 — join two consecutive "But" paragraphs with "and"
 
-Status: unconfirmed
+Status: confirmed
 
 IN
 
@@ -92,7 +92,7 @@ But they haven't and no one else has.
 
 ## RULE-05 — capitalise the word after a "?"
 
-Status: unconfirmed
+Status: confirmed
 
 IN
 
@@ -110,7 +110,7 @@ What is that foundation? Let's do a quick summary of those things that you have 
 
 ## RULE-06 — a paragraph ending in "Mr." joins the next
 
-Status: unconfirmed
+Status: confirmed
 
 IN
 
@@ -152,7 +152,7 @@ the other part of my resolve is to deal with each one of you in love, and mercy,
 
 ## RULE-08 — "That" + pronoun joins the previous paragraph
 
-Status: unconfirmed
+Status: confirmed
 
 IN
 
@@ -172,7 +172,7 @@ And they all proved sooner or later that they didn't really love it.
 
 ## RULE-09 — a paragraph repeated immediately is removed
 
-Status: unconfirmed
+Status: confirmed
 
 IN
 
@@ -192,7 +192,7 @@ I sent him.
 
 ## RULE-10 — "Then" joins the previous paragraph, lowercased
 
-Status: unconfirmed
+Status: confirmed
 
 IN
 
@@ -212,7 +212,7 @@ Do we see him? Have we seen him? Is he still here with us? If we do brethren the
 
 ## RULE-10-EXCEPTION-A — "Then lastly" does not join
 
-Status: unconfirmed
+Status: confirmed
 
 IN
 
@@ -234,7 +234,7 @@ Then lastly, in order to know what to do, in order to know how to make the right
 
 ## RULE-10-EXCEPTION-B — "Then how" does not join
 
-Status: unconfirmed
+Status: confirmed
 
 IN
 
@@ -256,7 +256,7 @@ Then how did all of the others who were called and made a part of the body of Ch
 
 ## RULE-11 — remove the closing trailer and everything after it
 
-Status: unconfirmed
+Status: confirmed
 
 **This case is not the spec's.** The spec anchors on the paragraph `The Church of God the Eternal.`, which does not occur in real level-1 output — see `L2-R11-01` in `docs/port-divergences.md`. This case uses your v03 redefinition, and is drawn from the actual tail of `docs/golden-transcripts/english-level1-transcript.md`.
 
@@ -278,9 +278,9 @@ And we can be among those who will help serve now and in the future the entire f
 
 ## RULE-11-NOT-THE-OPENING — the opening line must survive
 
-Status: unconfirmed
+Status: confirmed
 
-The same transcript *opens* with `The Church of God the Eternal presents …`. An anchor of `The Church of God the Eternal` alone truncates the document to nothing. This case exists to fail loudly if anyone ever shortens the anchor.
+The same transcript _opens_ with `The Church of God the Eternal presents …`. An anchor of `The Church of God the Eternal` alone truncates the document to nothing. This case exists to fail loudly if anyone ever shortens the anchor.
 
 IN
 
