@@ -43,9 +43,9 @@ In dev the app imports `packages/rules` **from source**, so a change to a rule r
 | `npm run typecheck` | Both packages, `tsc` for the rules and `vue-tsc` for the app. |
 | `npm run check` | Typecheck then test — what to run before pushing. |
 
-`npm test` reads its fixtures straight out of `packages/rules/tests/`. The hand-written examples are parsed from markdown at run time, so a case is added by writing it in the markdown and nowhere else.
+`npm test` runs two projects: the `rules` suite, whose fixtures it reads straight out of `packages/rules/tests/`, and the `web` suite in `packages/web/tests/`. The hand-written examples are parsed from markdown at run time, so a case is added by writing it in the markdown and nowhere else.
 
-**Working inside a package.** `packages/rules` owns its own `vitest.config.ts` and carries the same four commands, so `cd packages/rules && npm test` runs exactly the tests that live there. The root runner aggregates each package's config rather than holding a glob of its own, which is why the two agree by construction rather than by being kept in step.
+**Working inside a package.** Each package owns its own `vitest.config.ts` and carries the same four commands, so `cd packages/rules && npm test` runs exactly the tests that live there, and the same holds in `packages/web`. The root runner aggregates each package's config rather than holding a glob of its own, which is why they agree by construction rather than by being kept in step — and why a package without a config contributes nothing at all.
 
 ## Branches, CI and releases
 
@@ -69,6 +69,7 @@ Dependabot opens weekly pull requests against `develop` for both the npm workspa
 | [`packages/rules/tests/hand-written-examples/`](packages/rules/tests/hand-written-examples/) | One case per rule and per divergence, in isolation. Parsed directly by the test suite.                                           |
 | [`packages/rules/src/`](packages/rules/src/)                                                 | The ported pipeline. Every quirk kept on purpose names the `docs/port-divergences.md` entry it reproduces.                       |
 | [`packages/web/`](packages/web/)                                                             | The Vue app. Q16 variant C: the three Q13b stages, and a chip opening the rules drawer. File drop and export are still to come.  |
+| [`packages/web/tests/`](packages/web/tests/)                                                 | The component suite. `harness.test.ts` is the smoke test that proves the Vitest harness itself runs.                             |
 | [`docs/grillings/`](docs/grillings/)                                                         | How the scope was decided, one file per round. Historical record — paths quoted inside are as they were at the time.             |
 | [`docs/prototypes/`](docs/prototypes/)                                                       | Throwaway UI prototypes. Open the `.html` in a browser; no build step.                                                           |
 | [`original-scripts/`](original-scripts/)                                                     | The Python being ported. Frozen as provenance.                                                                                   |
