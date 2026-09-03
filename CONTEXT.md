@@ -46,8 +46,13 @@ A **preset** is a named set of level-2 rules with a default on/off state for eac
 | Stages | Two visible stages with a gate: level 2 cannot run before level 1. Editing the raw pane marks downstream **stale** (dimmed, with a re-run badge) without clearing it. | Q13b |
 | Middle pane | The reflowed pane is editable, and "Apply rules" uses its current content, not a fresh level-1 run. It is the repair point between two lossy stages. | Q13b |
 | Verification | Golden transcripts (`docs/golden-transcripts/`) as the regression net, hand-written examples (`docs/hand-written-examples/`) as the per-rule specification. | Q15 |
-| Preset UI | A preset list. Picking one reveals its rules, all checked; the user unchecks what they do not want. | Q16 |
+| Preset UI | A preset list. Picking one reveals its rules, all checked; the user unchecks what they do not want. Shape chosen from the prototype: **variant C** — a toolbar chip (`COGE (English) · 11/11 rules`) opening a drawer with presets on the left and rules on the right. Chosen because it leaves the most room for the transcripts. | Q16, prototype |
 | Backlog | Issues for actionable defects; `docs/port-divergences.md` stays the complete record. | Q17 |
+| Build order | **Two phases.** Phase 1 ports the Python faithfully and all golden pairs must go green byte-for-byte. Phase 2 applies the agreed rule changes and regenerates the goldens. The point of phase 1 is proof that the TypeScript and the Python agree — it cannot be obtained retroactively. | Q18 |
+| Golden policy | Goldens track **desired** behaviour. A golden is only ever regenerated in the same commit as the change that justifies it, with the diff explained in the commit message. A regeneration in its own commit is unreviewable. | Q19 |
+| Rule 2 spec | "Carry related meaning" stays in the spec as an aspiration, implemented when rule 7's machinery exists. The code joins on the bare `and ` prefix. | Q21 |
+| Rule 8 spec | Keep the code's word list; amend the spec to say "a pronoun **or determiner**". The only real-text hit in 1,322 paragraphs uses a determiner (`That his incapacity …`), so narrowing to true pronouns would give rule 8 zero coverage. | Q21 |
+| Ellipsis | `rstrip(".")` is left as it is. L1-03 makes the level-2 case unreachable, and the two ship in the same deliverable. | Q22 |
 
 ## Deferred to v2
 
@@ -70,7 +75,8 @@ A **preset** is a named set of level-2 rules with a default on/off state for eac
 Two facts that are not obvious from the code and cost time to rediscover:
 
 - **Rule 11 has never fired.** Its anchor is the exact paragraph `The Church of God the Eternal.`, which level 1 never produces — it glues the short closing lines into one long paragraph. The redefined anchor is `The Church of God the Eternal has just presented`, and the `has just presented` part is load-bearing: the same transcript *opens* with `The Church of God the Eternal presents …`, and a shorter anchor truncates the document to nothing.
-- **Five of the eleven rules do real work on a typical transcript.** Rules 2, 4, 6, 8 and 11 fire on none of the real text captured so far, which is why the hand-written examples are load-bearing rather than decorative.
+- **Rule 6 will never have real-text coverage, and that is not a gap to fill.** Its trigger is a paragraph *ending* in `Mr.`, which only happens when the transcription tool puts a line break right after `Mr.` on a line ending in a period. Example 2 contains 67 `Mr.` and not one at a line end. The spec's own rule 6 example comes from that very sermon, but the current transcription joined it already — the example was captured from an older run of the same audio. Re-transcribe and the trigger moves. Rule 6 is covered by hand-written example only.
+- **Of the eleven rules, nine do real work across the two English transcripts.** Rule 7 is a no-op by design; rule 11 gets its coverage the moment the redefined anchor lands. That leaves rule 6 as the only permanently uncovered one, which is why the hand-written examples are load-bearing rather than decorative.
 
 ## Related repos
 

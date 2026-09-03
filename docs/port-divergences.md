@@ -22,55 +22,72 @@ Severity is about the port, not about the corpus:
 
 Your `#### Jeremie's point of view` notes below are the source of this table; it exists so the dispositions can be read in one place. Three entries turned out **not to be defects at all** — your intended behaviour and the code's behaviour agree, and I had mis-read intent as a bug.
 
-The **fires on the golden pair?** column is measured, not guessed: each rule was run in isolation over `docs/golden-transcripts/english-level1-transcript.md` (503 paragraphs) and the touched-paragraph count recorded.
+The **fires on real text?** column is measured, not guessed: each rule was run in isolation over both English golden pairs — *What is Partiality?* (503 paragraphs) and *Do You See Christ?* (819 paragraphs) — and the touched-paragraph count recorded. `ex.2` means the second transcript covers it and the first does not.
 
-| ID | Disposition | Fires on the golden pair? |
+| ID | Disposition | Fires on real text? |
 | --- | --- | --- |
 | L1-01 `?` / `!` do not end a paragraph | **Not a defect.** Intended: the paragraph continues. | n/a — 79 of 503 paragraphs carry a mid-paragraph `? ` |
 | L1-02 period inside closing punctuation | **Not a defect.** Intended: the paragraph continues. | n/a |
-| L1-03 ellipsis forces a break | **Fix.** Match the ellipsis explicitly, before the period rule. | no — zero `...` in either transcript |
+| L1-03 ellipsis forces a break | **Fix.** Match the ellipsis explicitly, before the period rule. Ships with L2-R0X-01. | no — zero `...` in any transcript |
 | L1-04 no language-specific behaviour | Not a defect. Recorded to close an assumption. | n/a |
-| L2-R11-01 / -02 rule 11 | **Fix, redefined.** Remove from and including `The Church of God the Eternal has just presented`. | **yes** — and only as redefined; see below |
-| L2-R02-01 rule 2 ignores the preceding dot | **Not a defect.** The joined output is what you want. | no — rule 2 never fires |
-| L2-R02-02 "carry related meaning" | Open — you asked why it is unimplementable. Answered in round v04. | no |
-| L2-R0X-01 `rstrip(".")` eats ellipses | Open — your answer and L1-03 pull in opposite directions. Round v04. | no |
+| L2-R11-01 / -02 rule 11 | **Fix, redefined.** Remove from and including `The Church of God the Eternal has just presented`. | 1x in **both** transcripts, but only once redefined |
+| L2-R02-01 rule 2 ignores the preceding dot | **Not a defect.** The joined output is what you want. | ex.2 — 1x |
+| L2-R02-02 "carry related meaning" | **Keep in the spec as an aspiration**, implemented when rule 7's machinery exists (v04 Q21b). | n/a |
+| L2-R0X-01 `rstrip(".")` eats ellipses | **Leave as is**, relying on L1-03 to make it unreachable — the two ship together (v04 Q22b). | no |
 | L2-R03-01 / -02 rule 3 | **Fix per the spec prose.** | no — all 5 targets already satisfy the spec's condition |
-| L2-R04-01 "But" cascade | **Leave as is for now.** | no — no run of 3+ |
+| L2-R04-01 "But" cascade | **Leave as is for now.** | ex.2 — 2 pairs, still no run of 3+ |
 | L2-R05-01 rule 5 whitespace | **Fix per the spec prose.** | no — no `?` with 2+ spaces |
-| L2-R06-01 rule 6 skips a second hit | **Fix.** The second hit must match. | no — no paragraph ends in `Mr.` |
+| L2-R06-01 rule 6 skips a second hit | **Fix.** The second hit must match. | **never, and never will** — see below |
 | L2-R06-02 `Mrs.` / `Dr.` / `St.` | **Extend the rule.** Scope change, not a bug fix. | no |
-| L2-R08-01 punctuation after the pronoun | **Fix.** Be consistent with `_first_word`. | no — rule 8 never fires |
-| L2-R08-02 `_PRONOUNS` contains determiners | Open — you asked a question back. Answered in round v04. | no |
+| L2-R08-01 punctuation after the pronoun | **Fix.** Be consistent with `_first_word`. | ex.2 — rule 8 fires 1x |
+| L2-R08-02 `_PRONOUNS` contains determiners | **Keep the list; amend the spec** to say "a pronoun or determiner" (v04 Q21a). | ex.2 — and the only hit uses a determiner |
 | L2-R09-01 duplicate comparison | **Won't fix for now.** | yes — removes 5 paragraphs |
 | L2-R10-01 the "Then" exception list | **Unimplementable, agreed.** | yes — joins 2 paragraphs |
 | L2-R01-01 unguarded index in rule 1 | **Harden.** Corrected since v03 — it does not crash; the fault is latent. | no — no bare `And` paragraph |
 
 Two consequences worth stating plainly:
 
-1. **Rule 11 as currently coded never fires on real data.** `_TRAILER` is the exact paragraph `The Church of God the Eternal.`, and that paragraph does not exist in the golden transcript — level 1 glues the short closing lines into one long paragraph reading `The Church of God the Eternal has just presented What is Partiality? …`. Your redefinition is therefore not a tightening of a working rule, it is the first version of it that does anything. Your wording also matters more than it looks: paragraph 1 of the same transcript begins `The Church of God the Eternal presents …`, so an anchor of `The Church of God the Eternal` alone would truncate the document to nothing. `has just presented` is what separates the closing from the opening.
-2. **Most of the fixes you asked for change nothing on the golden pair.** Only the rule 11 redefinition alters the output. That is not an argument against the fixes — it is a measurement of how little coverage one transcript gives, and it is why the hand-written examples are load-bearing rather than a nice-to-have.
+1. **Rule 11 as currently coded never fires on real data.** `_TRAILER` is the exact paragraph `The Church of God the Eternal.`, and that paragraph exists in neither transcript — level 1 glues the short closing lines into one long paragraph reading `The Church of God the Eternal has just presented …`. Your redefinition is therefore not a tightening of a working rule, it is the first version of it that does anything. Your wording also matters more than it looks: both transcripts *open* with `The Church of God the Eternal presents …` at paragraph 0, so an anchor of `The Church of God the Eternal` alone would truncate either document to nothing. `has just presented` is what separates the closing from the opening.
+2. **Most of the fixes you asked for still change nothing on real text.** Only the rule 11 redefinition alters either transcript's output. That is not an argument against the fixes — it is a measurement of how little coverage even two transcripts give, and it is why the hand-written examples are load-bearing rather than a nice-to-have.
 
-### Coverage of the golden pair
+### Coverage of the golden pairs
 
-Measured over the English pair, per rule, in pipeline order:
+Measured per rule, in pipeline order, over each English pair. Both reproduce the Python byte-for-byte, so these are the real numbers, not estimates.
 
-| Rule | Paragraphs touched |
-| --- | --- |
-| 11 remove trailer | **0 — never fires** |
-| 9 remove duplicates | 5 removed |
-| 6 `Mr.` join | **0 — never fires** |
-| 2 `and` join | **0 — never fires** |
-| 10 `Then` join | 2 joined |
-| 8 `That` + pronoun | **0 — never fires** |
-| 4 `But` … `But` | **0 — never fires** |
-| 7 verbless join | 0 — no-op by design |
-| 1 remove `And` | 80 |
-| 3 capitalise first | 5 |
-| 5 capitalise after `?` | 1 |
+| Rule | Ex. 1 — *What is Partiality?* (503 ¶) | Ex. 2 — *Do You See Christ?* (819 ¶) |
+| --- | --- | --- |
+| 11 remove trailer | **0** | **0** |
+| 9 remove duplicates | 5 | 6 |
+| 6 `Mr.` join | **0** | **0** |
+| 2 `and` join | **0** | 1 |
+| 10 `Then` join | 2 | 1 |
+| 8 `That` + pronoun | **0** | 1 |
+| 4 `But` … `But` | **0** | 2 |
+| 7 verbless join | 0 | 0 — no-op by design |
+| 1 remove `And` | 80 | 125 |
+| 3 capitalise first | 5 | 17 |
+| 5 capitalise after `?` | 1 | 2 |
 
-Five of the eleven rules do real work on this transcript. Six never fire.
+Example 2 closes the gap for rules 2, 4 and 8. **Two rules still have no real-text coverage, for two different reasons.**
 
-Rule 8 declining is correct behaviour, not a miss: all six `That …` paragraphs in the transcript are `That was`, `That is`, `That still`, `That trying` — demonstrative sentences that should stay separate. The rule is right to leave them alone.
+**Rule 11 will get coverage the moment I-01 lands.** Both transcripts have exactly one paragraph matching the redefined anchor `The Church of God the Eternal has just presented`, and neither contains the exact paragraph `The Church of God the Eternal.` that the current code looks for. Both also *open* with the `presents` variant at paragraph 0, so both would be destroyed by a shortened anchor. That is now a confirmed pattern rather than a single sample.
+
+**Rule 6 cannot get real-text coverage by adding transcripts, and this is worth understanding before anyone tries.** Its trigger is a paragraph *ending* in `Mr.`, which only occurs when the transcription tool happens to place a line break immediately after `Mr.` on a line that ends with a period. Measured:
+
+| | `Mr.` occurrences in raw | raw lines *ending* in `Mr.` |
+| --- | --- | --- |
+| Example 1 | 4 | **0** |
+| Example 2 | 67 | **0** |
+
+Sixty-seven `Mr.` in example 2 and not one of them at a line end. More striking: the spec's own rule 6 example is drawn from this very sermon —
+
+> `My personal resolve, brethren, is that I will tenaciously defend the truth that God has preserved through Mr.` / `Raymond Cole all of these years.`
+
+— and in the current transcription that sentence arrives **already joined**, as paragraph 756, because this run broke the line at `is that I will tenaciously` instead. The spec's example came from an older transcription of the same audio.
+
+So rule 6's trigger is a property of a particular transcription run, not of the sermons. Re-transcribe and it moves. Its coverage has to come from `docs/hand-written-examples/` permanently, and that is a fact about the rule rather than a gap to be filled.
+
+Rule 8 declining on example 1 is correct behaviour, not a miss: all six `That …` paragraphs there are `That was`, `That is`, `That still`, `That trying` — demonstrative sentences that should stay separate. The rule is right to leave them alone, and it does fire once on example 2.
 
 ---
 

@@ -30,14 +30,14 @@ Your wording also matters more than it looks. Paragraph 1 of the same transcript
 
 Measured per rule, in pipeline order, over the English pair:
 
-| Rule | Paragraphs touched | | Rule | Paragraphs touched |
-| --- | --- | --- | --- | --- |
-| 11 remove trailer | **0** | | 4 `But`…`But` | **0** |
-| 9 remove duplicates | 5 | | 7 verbless join | 0 (no-op) |
-| 6 `Mr.` join | **0** | | 1 remove `And` | 80 |
-| 2 `and` join | **0** | | 3 capitalise first | 5 |
-| 10 `Then` join | 2 | | 5 capitalise after `?` | 1 |
-| 8 `That` + pronoun | **0** | | | |
+| Rule                | Paragraphs touched |     | Rule                   | Paragraphs touched |
+| ------------------- | ------------------ | --- | ---------------------- | ------------------ |
+| 11 remove trailer   | **0**              |     | 4 `But`…`But`          | **0**              |
+| 9 remove duplicates | 5                  |     | 7 verbless join        | 0 (no-op)          |
+| 6 `Mr.` join        | **0**              |     | 1 remove `And`         | 80                 |
+| 2 `and` join        | **0**              |     | 3 capitalise first     | 5                  |
+| 10 `Then` join      | 2                  |     | 5 capitalise after `?` | 1                  |
+| 8 `That` + pronoun  | **0**              |     |                        |                    |
 
 Rule 8 declining is correct, not a miss: all six `That …` paragraphs in the transcript are `That was`, `That is`, `That still`, `That trying` — demonstratives that should stay separate.
 
@@ -66,35 +66,35 @@ Tick the ones to open. Each would carry its catalogue ID in the title so `docs/p
 
 ### Group A — level 2 rule changes from your v03 dispositions
 
-| # | Title | Covers | Changes golden output? |
-| --- | --- | --- | --- |
-| I-01 | Rule 11: anchor on "The Church of God the Eternal has just presented", remove from and including it | L2-R11-01, L2-R11-02 | **yes** — removes 1 paragraph |
-| I-02 | Rule 3: apply the spec prose (previous paragraph must end in a period; exclude a leading "and" in any case) | L2-R03-01, L2-R03-02 | no |
-| I-03 | Rule 5: capitalise after "?" regardless of intervening whitespace | L2-R05-01 | no |
-| I-04 | Rule 6: re-examine a joined paragraph so a second "Mr." also matches | L2-R06-01 | no |
-| I-05 | Rule 6: extend to "Mrs.", "Dr.", "St." and initials | L2-R06-02 | no |
-| I-06 | Rule 8: strip punctuation before testing the second word, consistent with `_first_word` | L2-R08-01 | no |
-| I-07 | Rule 1: guard the unguarded index once each rule is separately callable | L2-R01-01 | no |
+| #    | Title                                                                                                       | Covers               | Changes golden output?        |
+| ---- | ----------------------------------------------------------------------------------------------------------- | -------------------- | ----------------------------- |
+| I-01 | Rule 11: anchor on "The Church of God the Eternal has just presented", remove from and including it         | L2-R11-01, L2-R11-02 | **yes** — removes 1 paragraph |
+| I-02 | Rule 3: apply the spec prose (previous paragraph must end in a period; exclude a leading "and" in any case) | L2-R03-01, L2-R03-02 | no                            |
+| I-03 | Rule 5: capitalise after "?" regardless of intervening whitespace                                           | L2-R05-01            | no                            |
+| I-04 | Rule 6: re-examine a joined paragraph so a second "Mr." also matches                                        | L2-R06-01            | no                            |
+| I-05 | Rule 6: extend to "Mrs.", "Dr.", "St." and initials                                                         | L2-R06-02            | no                            |
+| I-06 | Rule 8: strip punctuation before testing the second word, consistent with `_first_word`                     | L2-R08-01            | no                            |
+| I-07 | Rule 1: guard the unguarded index once each rule is separately callable                                     | L2-R01-01            | no                            |
 
 ### Group B — level 1
 
-| # | Title | Covers | Changes golden output? |
-| --- | --- | --- | --- |
-| I-08 | Level 1: an ellipsis must not end a paragraph; match it before the period rule | L1-03 | no |
-| I-09 | Level 1: normalise CRLF and bare CR before splitting | L1-05 | no, but **blocks the port** |
-| I-10 | Review level-1 sentence boundaries against a French corpus once more French transcripts exist | Q3c "Finding 2" | n/a |
+| #    | Title                                                                                         | Covers          | Changes golden output?      |
+| ---- | --------------------------------------------------------------------------------------------- | --------------- | --------------------------- |
+| I-08 | Level 1: an ellipsis must not end a paragraph; match it before the period rule                | L1-03           | no                          |
+| I-09 | Level 1: normalise CRLF and bare CR before splitting                                          | L1-05           | no, but **blocks the port** |
+| I-10 | Review level-1 sentence boundaries against a French corpus once more French transcripts exist | Q3c "Finding 2" | n/a                         |
 
 ### Group C — deferred features you explicitly asked to be issues
 
-| # | Title | Covers |
-| --- | --- | --- |
+| #    | Title                                                                                               | Covers   |
+| ---- | --------------------------------------------------------------------------------------------------- | -------- |
 | I-11 | Rule 7 via an LLM: hold its own grilling round (auth, spend cap, failure behaviour), then implement | Q4, Q11b |
-| I-12 | Batch re-run of the rules across the whole corpus | Q9 |
+| I-12 | Batch re-run of the rules across the whole corpus                                                   | Q9       |
 
 ### Group D — testing
 
-| # | Title | Covers |
-| --- | --- | --- |
+| #    | Title                                                                                                               | Covers    |
+| ---- | ------------------------------------------------------------------------------------------------------------------- | --------- |
 | I-13 | Add golden pairs until every rule fires at least once — rules 2, 4, 6, 8 and 11 are currently untested by real text | Finding 5 |
 
 ➡️ Recommendation: **open I-01, I-09, I-11, I-12 and I-13 now — five, not thirteen.**
@@ -104,6 +104,8 @@ I-01 changes behaviour and invalidates a fixture. I-09 will break the port on da
 **I-02 through I-08 I would not open**, and the reason is specific rather than tidiness: every one of them is "while porting rule N, implement it this way rather than that way". They are not separable from the port task — you cannot do the port and then do them — and a tracker full of issues that are really acceptance criteria for one commit makes the port look thirteen times bigger than it is. `docs/port-divergences.md` already carries each one with a measured example and a disposition, and `docs/hand-written-examples/` will carry each one as a failing test. That is a better record than an issue.
 
 ### Answer to Q17
+
+Go for recommendation
 
 ---
 
@@ -121,6 +123,8 @@ Q8 settled: port the code's behaviour, bug-for-bug, and file every divergence. Y
 
 ### Answer to Q18
 
+go for (b). That means two issues.
+
 ---
 
 ## Q19 - Once a rule is fixed, what do the golden files assert?
@@ -134,6 +138,8 @@ The moment I-01 lands, `english-level2-transcript.md` is stale by exactly one pa
 ➡️ Recommendation: **(b)**, and it composes with Q18(b): phase one asserts the frozen goldens, phase two regenerates them once, and from then on a golden is only ever regenerated in the same commit as the change that justifies it. The discipline that makes this safe is the "same commit" part — a regeneration in its own commit is unreviewable, because the diff has nothing to be explained by. (c) doubles the fixture for a distinction that only matters during the port week.
 
 ### Answer to Q19
+
+Go for recommendation.
 
 ---
 
@@ -151,13 +157,15 @@ One thing to keep as it is: **the French pair should stay level-1 only.** It is 
 
 ### Answer to Q20
 
+I added example 2 in @docs/golden-transcripts with the actual sermon I used for establishing all the rules.
+
 ---
 
 ## Q21 - Your two questions, answered — and the decision each one leaves
 
 **You asked, on L2-R02-02: "Why is it _unimplementable_?"**
 
-Fair challenge, and my word was too strong. It is not impossible; it is undecidable *deterministically*. To know whether "and especially for those of you, that are looking to me for that leadership" continues the previous sentence's thought, you have to understand both sentences. String rules can approximate it — does the previous paragraph end mid-clause, is the "and" followed by a noun phrase — and every approximation has counterexamples in both directions. It is the same class of problem as rule 7, so it needs the same tool: a model, or a human.
+Fair challenge, and my word was too strong. It is not impossible; it is undecidable _deterministically_. To know whether "and especially for those of you, that are looking to me for that leadership" continues the previous sentence's thought, you have to understand both sentences. String rules can approximate it — does the previous paragraph end mid-clause, is the "and" followed by a noun phrase — and every approximation has counterexamples in both directions. It is the same class of problem as rule 7, so it needs the same tool: a model, or a human.
 
 But that answer raises a better question. You already told me R02-01 is **not** a defect — you are happy with rule 2 joining on the bare `and ` prefix. So what work is the "carry related meaning" condition doing in the spec at all?
 
@@ -186,6 +194,8 @@ Whether that is wrong is genuinely your call, and I will say plainly that it rea
 
 ### Answer to Q21
 
+(b) and (a)
+
 ---
 
 ## Q22 - You have given the ellipsis two opposite fates
@@ -198,9 +208,11 @@ Both cannot be the principle. There is a resolution by construction: once L1-03 
 - **b)** Leave `rstrip(".")` as it is and rely on L1-03 making the ellipsis case unreachable.
 - **c)** Leave it entirely; L2-R0X-01's output is fine as you said.
 
-➡️ Recommendation: **(a)**. It makes the two decisions agree, and it costs one conditional. What it does *not* fix is Finding 7 — `U.S.A.` still becomes `U.S.A` when joined, and that is unfixable without an abbreviation list. Worth knowing that (a) is a consistency fix, not a correctness one. If you would rather not touch it, (b) is honest as long as L1-03 actually ships, and the risk is simply that the two land in different weeks.
+➡️ Recommendation: **(a)**. It makes the two decisions agree, and it costs one conditional. What it does _not_ fix is Finding 7 — `U.S.A.` still becomes `U.S.A` when joined, and that is unfixable without an abbreviation list. Worth knowing that (a) is a consistency fix, not a correctness one. If you would rather not touch it, (b) is honest as long as L1-03 actually ships, and the risk is simply that the two land in different weeks.
 
 ### Answer to Q22
+
+(b) joining the L1-03 and L2-R0X-01 in the same deliverable.
 
 ---
 
