@@ -45,6 +45,8 @@ In dev the app imports `packages/rules` **from source**, so a change to a rule r
 
 `npm test` reads its fixtures straight out of `packages/rules/tests/`. The hand-written examples are parsed from markdown at run time, so a case is added by writing it in the markdown and nowhere else.
 
+**Working inside a package.** `packages/rules` owns its own `vitest.config.ts` and carries the same four commands, so `cd packages/rules && npm test` runs exactly the tests that live there. The root runner aggregates each package's config rather than holding a glob of its own, which is why the two agree by construction rather than by being kept in step.
+
 ## Where things are
 
 |                                                                                              |                                                                                                                                  |
