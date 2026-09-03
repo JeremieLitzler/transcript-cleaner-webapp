@@ -45,7 +45,7 @@ A **preset** is a named set of level-2 rules with a default on/off state for eac
 | Hosting | Netlify, static only. No `functions` directory until rule 7 has its own round. | Q11b |
 | Stages | Two visible stages with a gate: level 2 cannot run before level 1. Editing the raw pane marks downstream **stale** (dimmed, with a re-run badge) without clearing it. | Q13b |
 | Middle pane | The reflowed pane is editable, and "Apply rules" uses its current content, not a fresh level-1 run. It is the repair point between two lossy stages. | Q13b |
-| Verification | Golden transcripts (`docs/golden-transcripts/`) as the regression net, hand-written examples (`docs/hand-written-examples/`) as the per-rule specification. | Q15 |
+| Verification | Golden transcripts (`packages/rules/tests/golden-transcripts/`) as the regression net, hand-written examples (`packages/rules/tests/hand-written-examples/`) as the per-rule specification. | Q15 |
 | Preset UI | A preset list. Picking one reveals its rules, all checked; the user unchecks what they do not want. Shape chosen from the prototype: **variant C** — a toolbar chip (`COGE (English) · 11/11 rules`) opening a drawer with presets on the left and rules on the right. Chosen because it leaves the most room for the transcripts. | Q16, prototype |
 | Backlog | Issues for actionable defects; `docs/port-divergences.md` stays the complete record. | Q17 |
 | Build order | **Two phases.** Phase 1 ports the Python faithfully and all golden pairs must go green byte-for-byte. Phase 2 applies the agreed rule changes and regenerates the goldens. The point of phase 1 is proof that the TypeScript and the Python agree — it cannot be obtained retroactively. | Q18 |
@@ -54,7 +54,7 @@ A **preset** is a named set of level-2 rules with a default on/off state for eac
 | Rule 8 spec | Keep the code's word list; amend the spec to say "a pronoun **or determiner**". The only real-text hit in 1,322 paragraphs uses a determiner (`That his incapacity …`), so narrowing to true pronouns would give rule 8 zero coverage. | Q21 |
 | Repo layout | A workspace with two packages: `packages/rules` (pure TypeScript, no dependencies) and `packages/web` (Vue). The rule engine is importable with no UI. | Q23 |
 | Tests | A Vitest suite parses `hand-written-examples/` markdown at run time and generates one test per case. The markdown is the artefact that is maintained; there is no transcribed second copy. `confirmed` and `wont-fix` assert, `unconfirmed` is skipped. Every case is currently `confirmed`. | Q24 |
-| Examples location | `docs/hand-written-examples/` moves into `packages/rules/` when the workspace is scaffolded, so cases sit next to the tests that read them. The golden transcripts **stay** at `docs/golden-transcripts/`, because Q27 makes them a contract shared with the Python batch tool rather than one package's fixtures. | Q24, Q27 |
+| Fixture location | Both the golden transcripts and the hand-written examples live under `packages/rules/tests/`, next to the tests that read them. I had proposed keeping the goldens in `docs/` because Q27 makes them a contract shared with the Python batch tool; that was overruled — proximity to the tests wins, and the Python side reaches across repositories either way. | Q23, Q24, Q27 |
 | File drop | A drop fills the raw pane and stops — it does not run level 1. It marks reflowed and cleaned stale rather than clearing them, matching Q13b's policy for edits. Drops are accepted anywhere on the page and always target the raw pane; per-pane drop targets were rejected because they add a second entry point to the gate. The filename is remembered and reused for the download (`sermon.txt` > `sermon-cleaned.txt`). | Q25 |
 | Presets shipped | **COGE (English)** — all eleven. **Universal (any language)** — rules 3, 5 and 9, the language-agnostic ones. (**Conservative**, from the prototype, is optional.) | Q26 |
 | Batch | Stays Python, in `coge-transcriptions/transcripts-processing/`. It is a rare maintenance operation over a git checkout, and git is its undo. The golden transcripts are asserted against both implementations, so drift is detected rather than prevented. | Q27 |
@@ -72,8 +72,8 @@ A **preset** is a named set of level-2 rules with a default on/off state for eac
 | --- | --- |
 | `original-scripts/` | The Python being ported. Frozen as provenance (Q7). |
 | `docs/port-divergences.md` | Every place the code and the spec disagree, each with a measured example and a disposition. The complete record. |
-| `docs/golden-transcripts/` | Real before/after pairs. Verified byte-identical to the Python's output. |
-| `docs/hand-written-examples/` | One case per rule and per divergence, in isolation. |
+| `packages/rules/tests/golden-transcripts/` | Real before/after pairs. Verified byte-identical to the Python's output. |
+| `packages/rules/tests/hand-written-examples/` | One case per rule and per divergence, in isolation. |
 | `docs/grillings/` | The scope grilling, one file per round. |
 
 ## Reading the pipeline

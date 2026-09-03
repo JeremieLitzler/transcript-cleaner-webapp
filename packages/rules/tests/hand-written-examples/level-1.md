@@ -118,7 +118,7 @@ Il a dit... Et puis il est parti.
 
 Status: confirmed
 
-The raw transcripts in `docs/golden-transcripts/` are all CRLF. A port that splits on `"\n"` alone carries a trailing `\r` into every line, which defeats the period check on every line and collapses the document into one paragraph. This case fails loudly if that regresses.
+The raw transcripts in `packages/rules/tests/golden-transcripts/` are all CRLF. A port that splits on `"\n"` alone carries a trailing `\r` into every line, which defeats the period check on every line and collapses the document into one paragraph. This case fails loudly if that regresses.
 
 IN
 

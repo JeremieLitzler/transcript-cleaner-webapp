@@ -2,7 +2,7 @@
 
 Q15 settled on **(b) and (c)**: golden transcripts as the regression net, hand-written examples as the per-rule specification. This folder is (c).
 
-`docs/golden-transcripts/` proves the port did not change behaviour on real text. It cannot prove a rule is *correct*, and — measured — it does not even exercise six of the eleven rules. These files carry the cases the corpus does not.
+`packages/rules/tests/golden-transcripts/` proves the port did not change behaviour on real text. It cannot prove a rule is *correct*, and — measured — it does not even exercise six of the eleven rules. These files carry the cases the corpus does not.
 
 ## Files
 
@@ -42,6 +42,6 @@ Anything else on the page is commentary and is ignored.
 
 ## Two rules for whoever writes cases here
 
-**Test each rule in isolation, not through the pipeline.** The spec's examples are written per rule and do not compose — its rule 2 example shows output that still begins with "And", which rule 1 would later strip. A case that runs the whole pipeline is testing something else, and `docs/golden-transcripts/` already tests that.
+**Test each rule in isolation, not through the pipeline.** The spec's examples are written per rule and do not compose — its rule 2 example shows output that still begins with "And", which rule 1 would later strip. A case that runs the whole pipeline is testing something else, and `packages/rules/tests/golden-transcripts/` already tests that.
 
 **Level 2 assumes level 1 has run.** Inputs here are paragraphs separated by blank lines, never raw Vibe output.

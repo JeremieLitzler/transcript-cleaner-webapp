@@ -85,7 +85,7 @@ Sixty-seven `Mr.` in example 2 and not one of them at a line end. More striking:
 
 — and in the current transcription that sentence arrives **already joined**, as paragraph 756, because this run broke the line at `is that I will tenaciously` instead. The spec's example came from an older transcription of the same audio.
 
-So rule 6's trigger is a property of a particular transcription run, not of the sermons. Re-transcribe and it moves. Its coverage has to come from `docs/hand-written-examples/` permanently, and that is a fact about the rule rather than a gap to be filled.
+So rule 6's trigger is a property of a particular transcription run, not of the sermons. Re-transcribe and it moves. Its coverage has to come from `packages/rules/tests/hand-written-examples/` permanently, and that is a fact about the rule rather than a gap to be filled.
 
 Rule 8 declining on example 1 is correct behaviour, not a miss: all six `That …` paragraphs there are `That was`, `That is`, `That still`, `That trying` — demonstrative sentences that should stay separate. The rule is right to leave them alone, and it does fire once on example 2.
 
@@ -169,7 +169,7 @@ Recorded to close an open assumption from Q3b. Level 1 was tested against French
 
 ### L1-05 — the raw transcripts are CRLF, and the port must normalise them — _new, found while verifying the golden pair_
 
-Every file in `docs/golden-transcripts/` ends its lines with `\r\n`. Python hides this twice over: `str.splitlines()` splits on `\r\n` and drops it, `str.strip()` would remove a stray `\r` anyway, and `Path.write_text` re-inserts `\r\n` on Windows. None of that is true in a browser. A TypeScript port that splits on `"\n"` will carry a trailing `\r` into every paragraph, which then defeats `endsWith(".")` on _every single line_ — level 1 would produce one enormous paragraph.
+Every file in `packages/rules/tests/golden-transcripts/` ends its lines with `\r\n`. Python hides this twice over: `str.splitlines()` splits on `\r\n` and drops it, `str.strip()` would remove a stray `\r` anyway, and `Path.write_text` re-inserts `\r\n` on Windows. None of that is true in a browser. A TypeScript port that splits on `"\n"` will carry a trailing `\r` into every paragraph, which then defeats `endsWith(".")` on _every single line_ — level 1 would produce one enormous paragraph.
 
 The port must normalise `\r\n` and bare `\r` to `\n` before splitting. This is not a divergence from the Python; it is a divergence the port will introduce if nobody writes it down.
 

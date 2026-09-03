@@ -19,9 +19,10 @@ Not built yet. The scope is settled across five grilling rounds and the work is 
 | --- | --- |
 | [`CONTEXT.md`](CONTEXT.md) | Glossary and every settled decision, each pointing at the question that settled it. **Start here.** |
 | [`docs/port-divergences.md`](docs/port-divergences.md) | Every place the original Python and its written spec disagree, with a measured example and a disposition. |
-| [`docs/golden-transcripts/`](docs/golden-transcripts/) | Real before/after pairs, verified byte-identical to the Python. The regression net, shared with the Python batch tool. |
-| [`docs/hand-written-examples/`](docs/hand-written-examples/) | One case per rule and per divergence, in isolation. Moves next to the tests when the app is scaffolded. |
-| [`docs/grillings/`](docs/grillings/) | How the scope was decided, one file per round. |
+| [`packages/rules/tests/golden-transcripts/`](packages/rules/tests/golden-transcripts/) | Real before/after pairs, verified byte-identical to the Python. The regression net, also asserted against the Python batch tool. |
+| [`packages/rules/tests/hand-written-examples/`](packages/rules/tests/hand-written-examples/) | One case per rule and per divergence, in isolation. Parsed directly by the test suite. |
+| [`docs/grillings/`](docs/grillings/) | How the scope was decided, one file per round. Historical record — paths quoted inside are as they were at the time. |
+| [`docs/prototypes/`](docs/prototypes/) | Throwaway UI prototypes. Open the `.html` in a browser; no build step. |
 | [`original-scripts/`](original-scripts/) | The Python being ported. Frozen as provenance. |
 
 ## Licence
