@@ -1,4 +1,4 @@
-import { normaliseLineEndings } from "./line-endings.js";
+import { pySplitLines, pyStrip, pyStripEnd } from './python-strings.js';
 
 /**
  * Level 1 — reflow. A faithful port of `original-scripts/format_transcription.py`.
@@ -11,14 +11,26 @@ import { normaliseLineEndings } from "./line-endings.js";
 
 /** `_format_line` — a line becomes a paragraph break, a continuation, or nothing. */
 function formatLine(line: string): string {
-  const stripped = line.trim();
-  if (!stripped) return "";
-  if (stripped.endsWith(".")) return stripped + "\n\n";
-  return stripped + " ";
+  const stripped = pyStrip(line);
+  if (!stripped) {
+    return '';
+  }
+  if (stripped.endsWith('.')) {
+    return stripped + '\n\n';
+  }
+  return stripped + ' ';
 }
 
 /**
  * Reflow a raw transcript into blank-line-separated paragraphs.
+ *
+ * `pySplitLines` is what L1-05 asks for and then some. The catalogued problem is
+ * that every raw transcript is CRLF and a browser, unlike Python, does not hide
+ * it: split on `\n` alone and every line keeps a trailing `\r`, the period check
+ * fails everywhere, and the whole transcript comes back as one paragraph. But
+ * `str.splitlines()` also breaks on `\v`, `\f`, the information separators and
+ * NEL, so matching only CRLF would leave a narrower gap of the same kind
+ * (L1-07).
  *
  * Trailing-newline convention (L1-06): the return value has **no** trailing
  * newline, matching the Python's closing `.rstrip()`. Callers that write a
@@ -26,6 +38,5 @@ function formatLine(line: string): string {
  * after normalising both sides.
  */
 export function formatLevel1(rawText: string): string {
-  const lines = normaliseLineEndings(rawText).split("\n");
-  return lines.map(formatLine).join("").trimEnd();
+  return pyStripEnd(pySplitLines(rawText).map(formatLine).join(''));
 }

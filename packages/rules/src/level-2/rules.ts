@@ -1,4 +1,9 @@
-import { Paragraphs } from "./paragraphs.js";
+import { Paragraphs } from './paragraphs.js';
+import {
+  pyFirstCharacter,
+  pyIsLower,
+  pySplitWhitespace,
+} from '../python-strings.js';
 
 /**
  * The eleven level-2 rules — a faithful port of the rule functions in
@@ -16,9 +21,9 @@ import { Paragraphs } from "./paragraphs.js";
 
 /** `_PRONOUNS` — what may follow "That" for rule 8 to fire. */
 const PRONOUNS: ReadonlySet<string> = new Set([
-  "he", "she", "it", "they", "we", "i", "you",
-  "his", "her", "their", "our", "my", "your",
-  "this", "these", "those",
+  'he', 'she', 'it', 'they', 'we', 'i', 'you',
+  'his', 'her', 'their', 'our', 'my', 'your',
+  'this', 'these', 'those',
 ]);
 
 /**
@@ -28,24 +33,13 @@ const PRONOUNS: ReadonlySet<string> = new Set([
  * never fired on real text (L2-R11-01/-02). The redefined anchor,
  * `The Church of God the Eternal has just presented`, is a phase-2 change.
  */
-const TRAILER = "The Church of God the Eternal.";
+const TRAILER = 'The Church of God the Eternal.';
 
 /** `_THEN_EXCEPTION_WORDS` — words after "Then " that keep the paragraph separate. */
 const THEN_EXCEPTION_WORDS: ReadonlySet<string> = new Set([
-  "how", "what", "why", "when", "where", "who", // interrogatives > new sentence
-  "lastly",                                     // sequential marker > new thought
+  'how', 'what', 'why', 'when', 'where', 'who', // interrogatives > new sentence
+  'lastly',                                     // sequential marker > new thought
 ]);
-
-/**
- * Python's `str.split()` with no argument: split on runs of whitespace,
- * discarding leading and trailing empties. `"  a  b ".split(/\s+/)` in
- * JavaScript would yield a leading `""`, which `firstWord` would then read as
- * the first word.
- */
-function splitWhitespace(text: string): string[] {
-  const trimmed = text.trim();
-  return trimmed === "" ? [] : trimmed.split(/\s+/);
-}
 
 /**
  * `_first_word` — the first whitespace-delimited token with every
@@ -56,16 +50,11 @@ function splitWhitespace(text: string): string[] {
  * empty paragraphs.
  */
 function firstWord(text: string): string {
-  const words = splitWhitespace(text);
+  const words = pySplitWhitespace(text);
   if (words.length === 0) {
-    throw new RangeError("firstWord: no words in the given text");
+    throw new RangeError('firstWord: no words in the given text');
   }
-  return words[0]!.replace(/[^a-zA-Z]/g, "").toLowerCase();
-}
-
-/** Python's `str.islower()` for a single character. */
-function isLowerChar(char: string): boolean {
-  return char !== char.toUpperCase() && char === char.toLowerCase();
+  return words[0]!.replace(/[^a-zA-Z]/g, '').toLowerCase();
 }
 
 /** Rule 11 — remove `The Church of God the Eternal.` and everything after it. */
@@ -87,7 +76,9 @@ export function rule11RemoveTrailer(paras: Paragraphs): Paragraphs {
 export function rule9RemoveDuplicates(paras: Paragraphs): Paragraphs {
   let result = new Paragraphs([]);
   for (const p of paras) {
-    if (result.lastEquals(p)) continue;
+    if (result.lastEquals(p)) {
+      continue;
+    }
     result = result.withAppended(p);
   }
   return result;
@@ -99,8 +90,8 @@ function consumeMrPair(
   paras: Paragraphs,
   i: number,
 ): [Paragraphs, number] {
-  if (paras.at(i).endsWith("Mr.") && i + 1 < paras.length) {
-    return [result.withAppended(paras.at(i) + " " + paras.at(i + 1)), i + 2];
+  if (paras.at(i).endsWith('Mr.') && i + 1 < paras.length) {
+    return [result.withAppended(paras.at(i) + ' ' + paras.at(i + 1)), i + 2];
   }
   return [result.withAppended(paras.at(i)), i + 1];
 }
@@ -132,8 +123,8 @@ export function rule6MrJoin(paras: Paragraphs): Paragraphs {
 export function rule2AndJoin(paras: Paragraphs): Paragraphs {
   let result = new Paragraphs([]);
   for (const p of paras) {
-    if (p.startsWith("and ") && !result.isEmpty()) {
-      result = result.joinedOntoLast(" ", p);
+    if (p.startsWith('and ') && !result.isEmpty()) {
+      result = result.joinedOntoLast(' ', p);
       continue;
     }
     result = result.withAppended(p);
@@ -143,7 +134,9 @@ export function rule2AndJoin(paras: Paragraphs): Paragraphs {
 
 /** Whether a `Then ` paragraph joins, or is held back by the exception list. */
 function thenJoins(paragraph: string): boolean {
-  if (!paragraph.startsWith("Then ")) return false;
+  if (!paragraph.startsWith('Then ')) {
+    return false;
+  }
   return !THEN_EXCEPTION_WORDS.has(firstWord(paragraph.slice(5)));
 }
 
@@ -157,7 +150,7 @@ export function rule10ThenJoin(paras: Paragraphs): Paragraphs {
   let result = new Paragraphs([]);
   for (const p of paras) {
     if (thenJoins(p) && !result.isEmpty()) {
-      result = result.joinedOntoLast(" then ", p.slice(5));
+      result = result.joinedOntoLast(' then ', p.slice(5));
       continue;
     }
     result = result.withAppended(p);
@@ -172,10 +165,10 @@ export function rule10ThenJoin(paras: Paragraphs): Paragraphs {
  * fails to match (L2-R08-01, a phase-2 fix).
  */
 function isThatPronoun(paragraph: string): boolean {
-  const words = splitWhitespace(paragraph);
+  const words = pySplitWhitespace(paragraph);
   return (
     words.length >= 2 &&
-    words[0] === "That" &&
+    words[0] === 'That' &&
     PRONOUNS.has(words[1]!.toLowerCase())
   );
 }
@@ -185,8 +178,8 @@ export function rule8ThatPronounJoin(paras: Paragraphs): Paragraphs {
   let result = new Paragraphs([]);
   for (const p of paras) {
     if (isThatPronoun(p) && !result.isEmpty()) {
-      const continuation = splitWhitespace(p).slice(1).join(" ");
-      result = result.joinedOntoLast(" that ", continuation);
+      const continuation = pySplitWhitespace(p).slice(1).join(' ');
+      result = result.joinedOntoLast(' that ', continuation);
       continue;
     }
     result = result.withAppended(p);
@@ -203,8 +196,8 @@ export function rule8ThatPronounJoin(paras: Paragraphs): Paragraphs {
 export function rule4ButButJoin(paras: Paragraphs): Paragraphs {
   let result = new Paragraphs([]);
   for (const p of paras) {
-    if (p.startsWith("But ") && result.lastStartsWith("But ")) {
-      result = result.joinedOntoLast(" and ", p.slice(4));
+    if (p.startsWith('But ') && result.lastStartsWith('But ')) {
+      result = result.joinedOntoLast(' and ', p.slice(4));
       continue;
     }
     result = result.withAppended(p);
@@ -215,15 +208,19 @@ export function rule4ButButJoin(paras: Paragraphs): Paragraphs {
 /**
  * `_strip_leading_and` — drop a leading `And ` and capitalise what follows.
  *
- * `body[0]` is unguarded, exactly as in the Python (L2-R01-01). It cannot be
+ * `body[0]` is unguarded, exactly as in the Python (L2-R01-01), and
+ * `pyFirstCharacter` throws where Python raises `IndexError`. It cannot be
  * reached through `Paragraphs.fromText`, which strips each paragraph, so
- * `"And "` arrives as `"And"` and fails the prefix test. Hardening it is a
+ * `'And '` arrives as `'And'` and fails the prefix test. Hardening it is a
  * phase-2 task.
  */
 function stripLeadingAnd(paragraph: string): string {
-  if (!paragraph.startsWith("And ")) return paragraph;
+  if (!paragraph.startsWith('And ')) {
+    return paragraph;
+  }
   const body = paragraph.slice(4);
-  return body[0]!.toUpperCase() + body.slice(1);
+  const first = pyFirstCharacter(body);
+  return first.toUpperCase() + body.slice(first.length);
 }
 
 /** Rule 1 — remove a leading `And ` and capitalise the next word. */
@@ -240,10 +237,13 @@ export function rule1RemoveAnd(paras: Paragraphs): Paragraphs {
 export function rule3CapitaliseFirst(paras: Paragraphs): Paragraphs {
   return new Paragraphs(
     paras.toArray().map((p) => {
-      if (p !== "" && isLowerChar(p[0]!)) {
-        return p[0]!.toUpperCase() + p.slice(1);
+      if (p === '') {
+        return p;
       }
-      return p;
+      const first = pyFirstCharacter(p);
+      return pyIsLower(first)
+        ? first.toUpperCase() + p.slice(first.length)
+        : p;
     }),
   );
 }
@@ -259,7 +259,10 @@ export function rule5CapitaliseAfterQuestion(paras: Paragraphs): Paragraphs {
     paras
       .toArray()
       .map((p) =>
-        p.replace(/\? ([a-z])/g, (_match, letter: string) => "? " + letter.toUpperCase()),
+        p.replace(
+          /\? ([a-z])/g,
+          (_match, letter: string) => '? ' + letter.toUpperCase(),
+        ),
       ),
   );
 }
