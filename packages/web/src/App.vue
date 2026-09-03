@@ -1,104 +1,163 @@
 <script setup lang="ts">
-import { computed, ref } from "vue";
+import { computed, ref } from 'vue';
 import {
   DEFAULT_PRESET_ID,
   formatLevel1,
   formatLevel2,
   LEVEL_2_PIPELINE,
   presetById,
-} from "@transcript-cleaner/rules";
+  type RuleId,
+} from '@transcript-cleaner/rules';
+import TranscriptPane from './components/TranscriptPane.vue';
+import RulesDrawer from './components/RulesDrawer.vue';
 
 /**
- * A scaffold, not the shipping UI.
+ * Q16 variant C: a toolbar chip that opens a rules drawer, and the three
+ * stages of Q13b filling everything the toolbar leaves. Variant C won because
+ * it gives the transcripts the most room, so the panes get the window and the
+ * configuration is somewhere you visit.
  *
- * Issue #2 asks for the workspace and the faithful port; the interface settled
- * in the grilling rounds — the two-stage gate and staleness of Q13b, the preset
- * drawer of Q16, the file drop of Q25, the export of Q6 — is a later issue.
- * What this screen is for is proving the dependency direction end to end:
- * `packages/web` imports `packages/rules`, and the rule engine runs unchanged in
- * a browser.
+ * The look comes from `docs/prototypes/q16-preset-rules.prototype.html`. The
+ * behaviour underneath is `@transcript-cleaner/rules` — the prototype hand-ported
+ * the Python and predates the fidelity fixes in L1-07, so its pipeline is not
+ * worth carrying over.
+ *
+ * Still to come, each its own piece of work: the `.txt` drop (Q25), copy and
+ * download (Q6), and the per-rule fire counts the prototype showed (issue #8).
  */
 
-const preset = presetById(DEFAULT_PRESET_ID);
+const raw = ref('');
+const reflowed = ref('');
+const cleaned = ref('');
 
-const raw = ref("");
-const reflowed = ref("");
-const cleaned = ref("");
+/** The Q13b gate: level 2 cannot run until level 1 has. */
+const ranLevel1 = ref(false);
+const reflowedStale = ref(false);
+const cleanedStale = ref(false);
 
-const rulesInPipelineOrder = computed(() =>
-  LEVEL_2_PIPELINE.filter((rule) => preset.ruleIds.includes(rule.id)),
-);
+const presetId = ref(DEFAULT_PRESET_ID);
+const enabledRuleIds = ref<RuleId[]>([...presetById(DEFAULT_PRESET_ID).ruleIds]);
+const drawerOpen = ref(false);
 
-function runLevel1() {
-  // Q13b: a re-run marks the downstream pane stale, it does not clear it — the
-  // cleaned text is the user's only copy until they re-run level 2. The
-  // staleness affordance itself (dimmed, with a re-run badge) belongs to the UI
-  // issue; what matters here is not cementing the opposite policy.
-  reflowed.value = formatLevel1(raw.value);
+const preset = computed(() => presetById(presetId.value));
+
+/**
+ * Q13b: an upstream change marks what follows stale, it never clears it. The
+ * cleaned text is the only copy the user has until they re-run, and throwing it
+ * away to signal "this is out of date" costs them more than the signal is worth.
+ */
+function markCleanedStale() {
+  if (cleaned.value !== '') {
+    cleanedStale.value = true;
+  }
 }
 
+function onRawInput(value: string) {
+  raw.value = value;
+  if (ranLevel1.value) {
+    reflowedStale.value = true;
+  }
+  markCleanedStale();
+}
+
+function onReflowedInput(value: string) {
+  reflowed.value = value;
+  markCleanedStale();
+}
+
+function runLevel1() {
+  reflowed.value = formatLevel1(raw.value);
+  ranLevel1.value = true;
+  reflowedStale.value = false;
+  markCleanedStale();
+}
+
+/**
+ * Q13b again: this reads the reflowed pane as it stands, not a fresh level-1
+ * run. That pane is the repair point between two lossy stages, and re-running
+ * level 1 here would silently discard whatever was fixed by hand.
+ */
 function runLevel2() {
   cleaned.value = formatLevel2(reflowed.value, {
-    enabledRuleIds: preset.ruleIds,
+    enabledRuleIds: enabledRuleIds.value,
   });
+  cleanedStale.value = false;
+}
+
+function pickPreset(id: string) {
+  presetId.value = id;
+  enabledRuleIds.value = [...presetById(id).ruleIds];
+  markCleanedStale();
+}
+
+function toggleRule(id: RuleId) {
+  enabledRuleIds.value = enabledRuleIds.value.includes(id)
+    ? enabledRuleIds.value.filter((ruleId) => ruleId !== id)
+    : [...enabledRuleIds.value, id];
+  markCleanedStale();
 }
 </script>
 
 <template>
-  <main class="mx-auto flex max-w-6xl flex-col gap-6 p-6">
-    <header>
-      <h1 class="text-2xl font-semibold">Transcript Cleaner</h1>
-      <p class="text-sm text-slate-600">
-        Scaffold — {{ preset.name }} · {{ rulesInPipelineOrder.length }}/{{
-          LEVEL_2_PIPELINE.length
-        }}
-        rules. The rule engine is <code>@transcript-cleaner/rules</code>; this page
-        only calls it.
-      </p>
+  <div class="flex min-h-0 flex-1 flex-col">
+    <header
+      class="flex flex-none items-center gap-[14px] border-b border-line bg-panel px-4 py-[10px]"
+    >
+      <button class="btn" :disabled="raw.trim() === ''" @click="runLevel1">
+        Reflow
+      </button>
+      <button
+        class="btn"
+        :class="{ 'btn-ghost': !ranLevel1 }"
+        :disabled="!ranLevel1"
+        :title="ranLevel1 ? undefined : 'Level 1 must run first'"
+        @click="runLevel2"
+      >
+        Apply rules
+      </button>
+
+      <button class="chip" @click="drawerOpen = true">
+        <b>{{ preset.name }}</b>
+        <span class="text-muted [font-variant-numeric:tabular-nums]">
+          {{ enabledRuleIds.length }}/{{ LEVEL_2_PIPELINE.length }} rules
+        </span>
+        <span class="text-muted">▸</span>
+      </button>
     </header>
 
-    <div class="grid gap-4 md:grid-cols-3">
-      <section class="flex flex-col gap-2">
-        <label class="text-sm font-medium" for="raw">Raw transcript</label>
-        <textarea
-          id="raw"
-          v-model="raw"
-          class="h-96 w-full rounded border border-slate-300 p-2 font-mono text-xs"
-          placeholder="Paste Vibe output here"
-        ></textarea>
-        <button
-          class="rounded bg-slate-800 px-3 py-2 text-sm text-white disabled:opacity-40"
-          :disabled="raw.trim() === ''"
-          @click="runLevel1"
-        >
-          Run level 1 — reflow
-        </button>
-      </section>
-
-      <section class="flex flex-col gap-2">
-        <label class="text-sm font-medium" for="reflowed">Reflowed transcript</label>
-        <textarea
-          id="reflowed"
-          v-model="reflowed"
-          class="h-96 w-full rounded border border-slate-300 p-2 font-mono text-xs"
-          placeholder="Level 1 output — editable"
-        ></textarea>
-        <button
-          class="rounded bg-slate-800 px-3 py-2 text-sm text-white disabled:opacity-40"
-          :disabled="reflowed.trim() === ''"
-          @click="runLevel2"
-        >
-          Run level 2 — apply rules
-        </button>
-      </section>
-
-      <section class="flex flex-col gap-2">
-        <span class="text-sm font-medium">Cleaned transcript</span>
-        <pre
-          class="h-96 w-full overflow-auto rounded border border-slate-300 p-2 font-mono text-xs whitespace-pre-wrap"
-          >{{ cleaned }}</pre
-        >
-      </section>
+    <div class="grid min-h-0 flex-1 grid-cols-3 gap-[10px] p-[10px]">
+      <TranscriptPane
+        title="Raw transcript"
+        sub="paste from Vibe"
+        placeholder="Paste a transcript here"
+        :model-value="raw"
+        @update:model-value="onRawInput"
+      />
+      <TranscriptPane
+        title="Reflowed transcript"
+        sub="level 1 · editable"
+        :model-value="reflowed"
+        :locked="!ranLevel1"
+        :stale="reflowedStale"
+        @update:model-value="onReflowedInput"
+      />
+      <TranscriptPane
+        title="Cleaned transcript"
+        sub="level 2 · read-only"
+        :model-value="cleaned"
+        readonly
+        :locked="cleaned === ''"
+        :stale="cleanedStale"
+      />
     </div>
-  </main>
+
+    <RulesDrawer
+      v-if="drawerOpen"
+      :preset-id="presetId"
+      :enabled-rule-ids="enabledRuleIds"
+      @close="drawerOpen = false"
+      @pick-preset="pickPreset"
+      @toggle-rule="toggleRule"
+    />
+  </div>
 </template>

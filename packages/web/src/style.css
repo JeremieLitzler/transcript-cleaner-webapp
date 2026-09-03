@@ -1,1 +1,168 @@
-@import "tailwindcss";
+@import 'tailwindcss';
+
+/*
+ * The palette and the component shapes settled in Q16, variant C, and lifted
+ * from `docs/prototypes/q16-preset-rules.prototype.html`.
+ *
+ * The prototype is throwaway code; this is its look and nothing else. Presets
+ * and rule labels come from `@transcript-cleaner/rules` (issue #2), not from
+ * the prototype's own copies, and the per-rule fire counts it renders are
+ * deliberately absent — they need their own grilling round (issue #8).
+ *
+ * Tokens live in `@theme` so they generate real utilities (`bg-accent`,
+ * `text-muted`, `border-line`). The handful of shapes that repeat across
+ * components sit in `@layer components`, because spelling out `font-[650]
+ * text-[12.5px]` at every call site is noise, not intent.
+ */
+@theme {
+  --color-bg: #f6f6f4;
+  --color-panel: #ffffff;
+  --color-panel-head: #fbfbf9;
+  --color-ink: #1b1b19;
+  --color-muted: #6b6b66;
+  --color-line: #e0e0da;
+  --color-accent: #2f5d50;
+  --color-accent-soft: #e8f0ed;
+  --color-accent-line: #cfe1da;
+  --color-warn: #8a6d1f;
+  --color-warn-soft: #fdf6e3;
+  --color-warn-line: #eadfbd;
+  --color-disabled: #c9c9c2;
+
+  --font-sans: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+}
+
+@layer base {
+  html,
+  body {
+    height: 100%;
+  }
+
+  body {
+    margin: 0;
+    background: var(--color-bg);
+    color: var(--color-ink);
+    font: 14px/1.5 var(--font-sans);
+  }
+
+  /* The three panes fill the window rather than the window scrolling. */
+  #app {
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+  }
+}
+
+@layer components {
+  .btn {
+    font: inherit;
+    font-weight: 550;
+    border: 1px solid var(--color-accent);
+    background: var(--color-accent);
+    color: #fff;
+    padding: 7px 14px;
+    border-radius: 7px;
+    cursor: pointer;
+  }
+
+  .btn:disabled {
+    background: var(--color-disabled);
+    border-color: var(--color-disabled);
+    color: #fff;
+    cursor: not-allowed;
+  }
+
+  /* The gated second stage: present, obviously not ready yet. */
+  .btn-ghost {
+    background: transparent;
+    color: var(--color-accent);
+  }
+
+  .btn-ghost:disabled {
+    background: transparent;
+    color: #b4b4ad;
+    border-color: #d8d8d2;
+  }
+
+  .badge {
+    font-size: 11px;
+    font-weight: 650;
+    padding: 2px 8px;
+    border-radius: 999px;
+    background: var(--color-warn-soft);
+    color: var(--color-warn);
+    border: 1px solid var(--color-warn-line);
+  }
+
+  .badge-ok {
+    background: var(--color-accent-soft);
+    color: var(--color-accent);
+    border-color: var(--color-accent-line);
+  }
+
+  .badge-lock {
+    background: #f0f0ec;
+    color: var(--color-muted);
+    border-color: var(--color-line);
+  }
+
+  .chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 9px;
+    border: 1px solid var(--color-line);
+    background: var(--color-panel);
+    border-radius: 999px;
+    padding: 6px 13px;
+    cursor: pointer;
+    font-size: 12.5px;
+  }
+
+  .chip:hover {
+    border-color: var(--color-accent);
+  }
+
+  .rulehead {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.07em;
+    text-transform: uppercase;
+    color: var(--color-muted);
+  }
+
+  .preset {
+    display: block;
+    border: 1px solid var(--color-line);
+    border-radius: 8px;
+    padding: 9px 11px;
+    margin-bottom: 7px;
+    cursor: pointer;
+    background: var(--color-panel);
+  }
+
+  .preset-on {
+    border-color: var(--color-accent);
+    background: var(--color-accent-soft);
+  }
+
+  .rule {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    padding: 5px 2px;
+    font-size: 12.5px;
+    cursor: pointer;
+  }
+
+  .rule input {
+    margin-top: 2px;
+    accent-color: var(--color-accent);
+    flex: 0 0 auto;
+  }
+
+  .rule-off .rule-name {
+    color: #a5a5a0;
+    text-decoration: line-through;
+  }
+}
