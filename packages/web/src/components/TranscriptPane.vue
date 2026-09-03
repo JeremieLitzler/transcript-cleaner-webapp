@@ -12,8 +12,12 @@ import { computed } from 'vue';
  */
 const props = defineProps<{
   title: string;
-  /** The quiet second line: which stage produced this, and whether it is editable. */
-  sub: string;
+  /**
+   * The quiet second line: which stage produced this, and whether it is
+   * editable. Optional, because a pane whose subtitle needs more than plain
+   * text supplies the `sub` slot instead.
+   */
+  sub?: string;
   modelValue: string;
   readonly?: boolean;
   /** The stage has never run. The pane is dimmed and says so. */
@@ -24,6 +28,13 @@ const props = defineProps<{
 }>();
 
 defineEmits<{ 'update:modelValue': [value: string] }>();
+
+/**
+ * The subtitle is a slot so a pane can put a link in it. Filling the slot
+ * replaces the `sub` prop entirely; the styling stays on the wrapping span so
+ * slot content cannot drift from the plain-string panes.
+ */
+defineSlots<{ sub?: () => unknown }>();
 
 const badge = computed(() => {
   if (props.locked) return { text: 'locked', variant: 'badge-lock' };
@@ -42,7 +53,9 @@ const badge = computed(() => {
       class="flex flex-none items-center gap-2 border-b border-line bg-panel-head px-[10px] py-2"
     >
       <span class="text-xs font-[650]">{{ title }}</span>
-      <span class="text-[11px] text-muted">{{ sub }}</span>
+      <span class="text-[11px] text-muted">
+        <slot name="sub">{{ sub }}</slot>
+      </span>
       <span v-if="badge" class="badge ml-auto" :class="badge.variant">{{
         badge.text
       }}</span>
