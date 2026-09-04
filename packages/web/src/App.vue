@@ -128,11 +128,22 @@ function toggleRule(id: RuleId) {
     <div class="grid min-h-0 flex-1 grid-cols-3 gap-[10px] p-[10px]">
       <TranscriptPane
         title="Raw transcript"
-        sub="paste from Vibe"
         placeholder="Paste a transcript here"
         :model-value="raw"
         @update:model-value="onRawInput"
-      />
+      >
+        <!-- The space in `'paste '` is authored, not left to the compiler's
+             whitespace handling, so only `from Vibe` is the link. -->
+        <template #sub>
+          {{ 'paste ' }}<a
+            class="text-accent hover:underline"
+            href="https://github.com/thewh1teagle/vibe/releases/tag/v3.0.23"
+            target="_blank"
+            rel="noopener noreferrer"
+            title="v3.0.23 is the preferred stable version; the v3.1.x line is not considered stable."
+          >from Vibe</a>
+        </template>
+      </TranscriptPane>
       <TranscriptPane
         title="Reflowed transcript"
         sub="level 1 · editable"

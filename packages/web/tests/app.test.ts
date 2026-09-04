@@ -508,3 +508,57 @@ describe('the App rule toggles', () => {
     );
   });
 });
+
+describe('the App raw pane Vibe link', () => {
+  /** The raw pane's muted subtitle span, where issue #21 puts the link. */
+  function rawSub(wrapper: Wrapper) {
+    return pane(wrapper, 'Raw transcript').get('header .text-muted');
+  }
+
+  /** The `from Vibe` anchor inside that subtitle. */
+  function rawLink(wrapper: Wrapper) {
+    return rawSub(wrapper).get('a');
+  }
+
+  it('reads "paste from Vibe" with only "from Vibe" carrying the link', () => {
+    // The `paste ` half stays text and only `from Vibe` is the anchor, so the
+    // authored space between them has to survive into the rendered subtitle.
+    const sub = rawSub(mountApp());
+
+    expect(sub.text()).toBe('paste from Vibe');
+    expect(sub.get('a').text()).toBe('from Vibe');
+  });
+
+  it('points the link at the pinned v3.0.23 release and opens it safely', () => {
+    const link = rawLink(mountApp());
+
+    expect(link.attributes('href')).toBe(
+      'https://github.com/thewh1teagle/vibe/releases/tag/v3.0.23',
+    );
+    expect(link.attributes('target')).toBe('_blank');
+    expect(link.attributes('rel')).toBe('noopener noreferrer');
+  });
+
+  it('explains the pinned version in a native tooltip', () => {
+    // Why 3.0.23 and not the newer 3.1.x line — the reason a bare link cannot
+    // carry, so it goes in the `title`.
+    const title = rawLink(mountApp()).attributes('title');
+
+    expect(title).toMatch(/3\.0\.23/);
+    expect(title).toMatch(/3\.1/);
+  });
+
+  it('leaves the other two panes on their plain-string subtitles', () => {
+    // Issue #21 fills the `#sub` slot for the raw pane only; the reflowed and
+    // cleaned panes keep passing `sub` as a string and grow no anchor.
+    const wrapper = mountApp();
+
+    const reflowed = pane(wrapper, 'Reflowed transcript');
+    expect(reflowed.get('header .text-muted').text()).toBe('level 1 · editable');
+    expect(reflowed.find('header a').exists()).toBe(false);
+
+    const cleaned = pane(wrapper, 'Cleaned transcript');
+    expect(cleaned.get('header .text-muted').text()).toBe('level 2 · read-only');
+    expect(cleaned.find('header a').exists()).toBe(false);
+  });
+});
