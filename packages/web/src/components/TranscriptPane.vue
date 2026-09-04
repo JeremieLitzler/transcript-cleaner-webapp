@@ -46,11 +46,12 @@ const badge = computed(() => {
 
 <template>
   <section
-    class="flex min-h-0 min-w-0 flex-col overflow-hidden rounded-[10px] border border-line bg-panel"
-    :class="{ 'opacity-55': locked }"
+    class="flex min-h-0 min-w-0 flex-col overflow-hidden rounded-[10px] border border-line"
+    :class="locked ? 'bg-panel-locked' : 'bg-panel'"
   >
     <header
-      class="flex flex-none items-center gap-2 border-b border-line bg-panel-head px-[10px] py-2"
+      class="flex flex-none items-center gap-2 border-b border-line px-[10px] py-2"
+      :class="locked ? 'bg-panel-head-locked' : 'bg-panel-head'"
     >
       <span class="text-xs font-[650]">{{ title }}</span>
       <span class="text-[11px] text-muted">
@@ -69,6 +70,7 @@ const badge = computed(() => {
       ]"
       :value="modelValue"
       :readonly="readonly"
+      :aria-label="title"
       :placeholder="placeholder"
       spellcheck="false"
       @input="

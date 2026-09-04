@@ -103,6 +103,13 @@ function toggleRule(id: RuleId) {
     <header
       class="flex flex-none items-center gap-[14px] border-b border-line bg-panel px-4 py-[10px]"
     >
+      <!-- First in the header, and so first in focus order, so it is the
+           very first stop for a keyboard user (issue #33). Kept inside the
+           banner landmark rather than floating outside every landmark. -->
+      <a href="#main-content" class="skip-link">Skip to main content</a>
+
+      <h1 class="sr-only">Transcript Cleaner</h1>
+
       <button class="btn" :disabled="raw.trim() === ''" @click="runLevel1">
         Reflow
       </button>
@@ -125,7 +132,11 @@ function toggleRule(id: RuleId) {
       </button>
     </header>
 
-    <div class="grid min-h-0 flex-1 grid-cols-3 gap-[10px] p-[10px]">
+    <main
+      id="main-content"
+      tabindex="-1"
+      class="grid min-h-0 flex-1 grid-cols-3 gap-[10px] p-[10px]"
+    >
       <TranscriptPane
         title="Raw transcript"
         placeholder="Paste a transcript here"
@@ -136,7 +147,7 @@ function toggleRule(id: RuleId) {
              whitespace handling, so only `from Vibe` is the link. -->
         <template #sub>
           {{ 'paste ' }}<a
-            class="text-accent hover:underline"
+            class="text-accent underline underline-offset-2 hover:text-accent-dark hover:decoration-2 focus-visible:rounded-sm focus-visible:text-accent-dark focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
             href="https://github.com/thewh1teagle/vibe/releases/tag/v3.0.23"
             target="_blank"
             rel="noopener noreferrer"
@@ -160,7 +171,7 @@ function toggleRule(id: RuleId) {
         :locked="cleaned === ''"
         :stale="cleanedStale"
       />
-    </div>
+    </main>
 
     <RulesDrawer
       v-if="drawerOpen"
