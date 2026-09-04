@@ -92,12 +92,36 @@ describe('the TranscriptPane badge', () => {
 });
 
 describe('the TranscriptPane styling', () => {
-  it('dims the whole section while locked', () => {
-    expect(mountPane({ locked: true }).classes()).toContain('opacity-55');
+  /**
+   * issue #33: locking used to dim the whole section with `opacity`, which
+   * fades text and background together and fails WCAG contrast once both
+   * drift toward the page colour. `bg-panel-locked` is a solid stand-in
+   * chosen to keep the same "not ready yet" look without touching opacity.
+   */
+  it('gives a locked section the locked background, not a dimmed one', () => {
+    const classes = mountPane({ locked: true }).classes();
+
+    expect(classes).toContain('bg-panel-locked');
+    expect(classes).not.toContain('opacity-55');
   });
 
-  it('leaves an unlocked section undimmed', () => {
-    expect(mountPane({ locked: false }).classes()).not.toContain('opacity-55');
+  it('leaves an unlocked section on the normal panel background', () => {
+    const classes = mountPane({ locked: false }).classes();
+
+    expect(classes).toContain('bg-panel');
+    expect(classes).not.toContain('bg-panel-locked');
+  });
+
+  it('gives a locked header the locked head background', () => {
+    const wrapper = mountPane({ locked: true });
+
+    expect(wrapper.get('header').classes()).toContain('bg-panel-head-locked');
+  });
+
+  it('leaves an unlocked header on the normal head background', () => {
+    const wrapper = mountPane({ locked: false });
+
+    expect(wrapper.get('header').classes()).toContain('bg-panel-head');
   });
 
   it('mutes the textarea of a stale pane', () => {
@@ -167,6 +191,14 @@ describe('the TranscriptPane textarea', () => {
 
     expect(textarea.element.value).toBe('A paragraph.');
     expect(textarea.attributes('placeholder')).toBe('Paste a transcript here');
+  });
+
+  it('names itself for assistive tech from the title, not the visible header text alone', () => {
+    // issue #33: the title is a plain `<span>`, not a `<label>`, so without
+    // this the textarea has no accessible name at all.
+    const textarea = mountPane({ title: 'Cleaned transcript' }).get('textarea');
+
+    expect(textarea.attributes('aria-label')).toBe('Cleaned transcript');
   });
 });
 

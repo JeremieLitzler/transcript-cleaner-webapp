@@ -561,4 +561,48 @@ describe('the App raw pane Vibe link', () => {
     expect(cleaned.get('header .text-muted').text()).toBe('level 2 · read-only');
     expect(cleaned.find('header a').exists()).toBe(false);
   });
+
+  it('underlines the link at rest, not only on hover', () => {
+    // issue #33: a link told apart from plain text only by colour and only on
+    // hover fails WCAG 1.4.1 for anyone who cannot see the colour or is not
+    // hovering it. It must read as a link before either applies.
+    expect(rawLink(mountApp()).classes()).toContain('underline');
+  });
+
+  it('gives the link distinct hover and focus-visible styles', () => {
+    // Neither state may be silent, and each must be visually its own —
+    // otherwise a keyboard user cannot tell focus from a mouse hover, or from
+    // the resting state.
+    const classes = rawLink(mountApp()).classes();
+
+    expect(classes).toContain('hover:decoration-2');
+    expect(classes).toContain('focus-visible:outline');
+  });
+});
+
+describe('the App landmarks', () => {
+  it('names the page with a heading', () => {
+    // Hidden visually — the toolbar has no room for it — but present for
+    // assistive tech, and for the "page has an h1" WCAG check (issue #33).
+    const h1 = mountApp().get('h1');
+
+    expect(h1.text()).toBe('Transcript Cleaner');
+  });
+
+  it('puts the three panes inside a main landmark', () => {
+    const wrapper = mountApp();
+    const main = wrapper.get('main');
+
+    expect(main.findAll('section')).toHaveLength(3);
+  });
+
+  it('offers a skip link to the main landmark, first in the page', () => {
+    // The WCAG 2.4.1 bypass block: the very first focusable thing on the
+    // page, pointing at the main landmark it skips to.
+    const wrapper = mountApp();
+    const skipLink = wrapper.get('a.skip-link');
+
+    expect(skipLink.attributes('href')).toBe('#main-content');
+    expect(wrapper.get('#main-content').element.tagName).toBe('MAIN');
+  });
 });

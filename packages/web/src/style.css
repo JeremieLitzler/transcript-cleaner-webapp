@@ -22,12 +22,27 @@
   --color-muted: #6b6b66;
   --color-line: #e0e0da;
   --color-accent: #2f5d50;
+  --color-accent-dark: #1f4a3e;
   --color-accent-soft: #e8f0ed;
   --color-accent-line: #cfe1da;
   --color-warn: #8a6d1f;
   --color-warn-soft: #fdf6e3;
   --color-warn-line: #eadfbd;
   --color-disabled: #c9c9c2;
+
+  /*
+   * issue #33: a locked pane used to dim via `opacity`, which fades the
+   * background *and* the text together and quietly fails WCAG contrast once
+   * both drift toward the page colour. These are solid stand-ins for the same
+   * "not ready yet" look, chosen to keep every locked-pane text/background
+   * pair at or above 4.5:1 on their own, with no opacity involved.
+   *
+   * Deliberately close to, but distinct from, `--color-bg` and `.badge-lock`'s
+   * fill: matching either exactly erases the boundary a code review caught —
+   * the panel merging into the page, or the "locked" pill into its own header.
+   */
+  --color-panel-locked: #f2f2ee;
+  --color-panel-head-locked: #eeeeea;
 
   --font-sans: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
   --font-mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
@@ -55,6 +70,28 @@
 }
 
 @layer components {
+  /*
+   * issue #33: the bypass block WCAG 2.4.1 asks for. Off-screen until it takes
+   * keyboard focus, at which point it drops into view above everything else.
+   */
+  .skip-link {
+    position: absolute;
+    top: -40px;
+    left: 8px;
+    z-index: 50;
+    background: var(--color-accent);
+    color: #fff;
+    padding: 8px 14px;
+    border-radius: 0 0 7px 7px;
+    font-weight: 650;
+    text-decoration: none;
+    transition: top 0.15s ease;
+  }
+
+  .skip-link:focus {
+    top: 0;
+  }
+
   .btn {
     font: inherit;
     font-weight: 550;
@@ -104,7 +141,13 @@
   .badge-lock {
     background: #f0f0ec;
     color: var(--color-muted);
-    border-color: var(--color-line);
+    /*
+     * issue #33: `--color-line` is too close to any near-white header to
+     * outline the pill at all (well under WCAG 1.4.11's 3:1 for UI-component
+     * boundaries). `--color-muted` clears that against every header this
+     * badge appears on, locked or not.
+     */
+    border-color: var(--color-muted);
   }
 
   .chip {
