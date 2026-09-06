@@ -56,8 +56,10 @@ describe('str.strip() is not String.prototype.trim()', () => {
 describe('Python indexes strings by code point, JavaScript by code unit', () => {
   // U+10428 DESERET SMALL LETTER LONG I uppercases to U+10400. Reading p[0] as
   // a UTF-16 code unit takes half the surrogate pair and changes nothing.
-  const deseretLower = '\u{10428}pple starts here.';
-  const deseretUpper = '\u{10400}pple starts here.';
+  // Rule 3 needs a predecessor ending in a period to fire (L2-R03-01), so the
+  // astral paragraph is given one.
+  const deseretLower = 'A first sentence.\n\n\u{10428}pple starts here.';
+  const deseretUpper = 'A first sentence.\n\n\u{10400}pple starts here.';
 
   it('rule 3 capitalises an astral lowercase opening', () => {
     expect(
@@ -69,6 +71,15 @@ describe('Python indexes strings by code point, JavaScript by code unit', () => 
     expect(
       rule1RemoveAnd(Paragraphs.fromText('And \u{10428}pple.')).toText(),
     ).toBe('\u{10400}pple.');
+  });
+});
+
+describe('rule 1 guards the index it reads (L2-R01-01)', () => {
+  // Reachable only by calling the rule directly with an unstripped paragraph —
+  // `Paragraphs.fromText` would strip `'And '` to `'And'`, which fails the
+  // prefix test. Issue #3 added the guard now each rule is separately callable.
+  it('returns empty for a bare "And " rather than throwing on the missing next char', () => {
+    expect(rule1RemoveAnd(new Paragraphs(['And '])).toText()).toBe('');
   });
 });
 

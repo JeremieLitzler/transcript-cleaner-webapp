@@ -1611,5 +1611,3 @@ But we can have absolute confidence if we see Christ.
 Do we see him? Have we seen him? Is he still here with us? If we do, brethren, then you have no reason to doubt and there is nothing that's going to sway you, nothing that's going to get you off of the mark before the revealing of our elder brother and our high priest, Jesus Christ.
 
 May God guide us all and keep us through the trials that are yet ahead.
-
-The Church of God the Eternal has just presented Do You See Christ? A special message given by Mr. John Brisby concerning the illness of Mr. Raymond Cole.
