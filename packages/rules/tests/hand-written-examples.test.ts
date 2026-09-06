@@ -17,11 +17,19 @@ import {
  * cannot drift from the suite.
  *
  * A case is skipped when its status says `unconfirmed`, or when it carries a
- * `Phase:` line naming a phase later than this one. Phase 1 (issue #2) is a
- * faithful port; the cases that state the behaviour issue #3 will introduce are
- * marked `Phase: 2` and go live when that work lands.
+ * `Phase:` line naming a phase later than this one. Phase 1 (issue #2) was a
+ * faithful port; phase 2 (issue #3) applied the agreed rule changes and dropped
+ * the `Phase: 2` lines from the cases that state them. The only case still
+ * deferred is rule 7's target, which needs the LLM work in issue #5.
  */
 
+/**
+ * The phase whose cases assert. `'1'` is also what a case with no `Phase:` line
+ * gets, so every landed case sits here; a case tagged with any other phase is
+ * skipped and listed in `DEFERRED`. Issue #3 landed by *deleting* its `Phase: 2`
+ * lines, not by moving this constant — bumping it would strip the phase-1 cases
+ * instead.
+ */
 const CURRENT_PHASE = '1';
 
 function run(runner: Runner, input: string): string {
@@ -43,11 +51,6 @@ const cases = loadCases();
  * reviewable act rather than a silent way to disable a failing test.
  */
 const DEFERRED: Readonly<Record<string, string>> = {
-  'L1-03': '2', // ellipsis must not break a paragraph — issue #3
-  'RULE-11': '2', // the redefined trailer anchor — issue #3
-  'L2-R06-01': '2', // rule 6 must re-examine a joined paragraph — issue #3
-  'L2-R06-02': '2', // rule 6 must handle Mrs./Dr./St. — issue #3
-  'L2-R08-01': '2', // rule 8 must ignore punctuation after the pronoun — issue #3
   'RULE-07': 'llm', // the verbless join needs an LLM — issue #5
 };
 

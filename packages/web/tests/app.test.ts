@@ -43,12 +43,14 @@ const CLEANED =
 
 /**
  * The same text with rule 2 off — under the Universal preset, or with rule 2
- * unticked by hand. The second paragraph survives the join, and rule 3, which
- * stays on either way, capitalises it. A rule set that produced the same output
- * as the default would prove nothing about the wiring.
+ * unticked by hand. The second paragraph survives the join. Rule 3 stays on
+ * either way but leaves it alone: it opens with "and", which the spec prose
+ * excludes (L2-R03-02). The result is the reflowed text unchanged, which still
+ * differs from the default preset's single joined paragraph — a rule set that
+ * produced `CLEANED` would prove nothing about the wiring.
  */
 const CLEANED_WITHOUT_RULE_2 =
-  'This is the first line of a paragraph.\n\nAnd the second paragraph follows.';
+  'This is the first line of a paragraph.\n\nand the second paragraph follows.';
 
 function mountApp() {
   return mount(App);

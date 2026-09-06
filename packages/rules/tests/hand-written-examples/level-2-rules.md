@@ -258,9 +258,8 @@ Then how did all of the others who were called and made a part of the body of Ch
 ## RULE-11 — remove the closing trailer and everything after it
 
 Status: confirmed
-Phase: 2
 
-**This case is not the spec's.** The spec anchors on the paragraph `The Church of God the Eternal.`, which does not occur in real level-1 output — see `L2-R11-01` in `docs/port-divergences.md`. This case uses your v03 redefinition, and is drawn from the actual tail of `packages/rules/tests/golden-transcripts/english-level1-transcript.md`.
+**This case is not the spec's.** The spec anchors on the paragraph `The Church of God the Eternal.`, which does not occur in real level-1 output — see `L2-R11-01` in `docs/port-divergences.md`. This case uses your v03 redefinition (issue #3: remove from and including the first paragraph containing `The Church of God the Eternal has just presented`), and is drawn from the actual tail of `packages/rules/tests/golden-transcripts/english-level1-transcript.md`.
 
 IN
 

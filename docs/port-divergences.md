@@ -28,24 +28,24 @@ The **fires on real text?** column is measured, not guessed: each rule was run i
 | --- | --- | --- |
 | L1-01 `?` / `!` do not end a paragraph | **Not a defect.** Intended: the paragraph continues. | n/a — 79 of 503 paragraphs carry a mid-paragraph `? ` |
 | L1-02 period inside closing punctuation | **Not a defect.** Intended: the paragraph continues. | n/a |
-| L1-03 ellipsis forces a break | **Fix.** Match the ellipsis explicitly, before the period rule. Ships with L2-R0X-01. | no — zero `...` in any transcript |
+| L1-03 ellipsis forces a break | **Fix. Landed in phase 2 (issue #3).** Matched explicitly, before the period rule. Ships with L2-R0X-01. | no — zero `...` in any transcript |
 | L1-04 no language-specific behaviour | Not a defect. Recorded to close an assumption. | n/a |
 | L1-05 CRLF must be normalised before splitting | **Port-only. Fixed in phase 1** — a browser does not hide line endings the way Python does. | yes — every CRLF transcript |
 | L1-07 Python vs. JavaScript string methods | **Port-only. Fixed in phase 1** — a divergence between the two implementations is the one defect phase 1 cannot carry. | no — needs a control character, a BOM, or an astral script |
-| L2-R11-01 / -02 rule 11 | **Fix, redefined.** Remove from and including `The Church of God the Eternal has just presented`. | 1x in **both** transcripts, but only once redefined |
+| L2-R11-01 / -02 rule 11 | **Fix, redefined. Landed in phase 2 (issue #3).** Removes from and including the first paragraph *containing* `The Church of God the Eternal has just presented`. | 1x in **both** transcripts, but only once redefined |
 | L2-R02-01 rule 2 ignores the preceding dot | **Not a defect.** The joined output is what you want. | ex.2 — 1x |
 | L2-R02-02 "carry related meaning" | **Keep in the spec as an aspiration**, implemented when rule 7's machinery exists (v04 Q21b). | n/a |
 | L2-R0X-01 `rstrip(".")` eats ellipses | **Leave as is**, relying on L1-03 to make it unreachable — the two ship together (v04 Q22b). | no |
-| L2-R03-01 / -02 rule 3 | **Fix per the spec prose.** | no — all 5 targets already satisfy the spec's condition |
+| L2-R03-01 / -02 rule 3 | **Fix per the spec prose. Landed in phase 2 (issue #3).** | no — all 5 targets already satisfy the spec's condition |
 | L2-R04-01 "But" cascade | **Leave as is for now.** | ex.2 — 2 pairs, still no run of 3+ |
-| L2-R05-01 rule 5 whitespace | **Fix per the spec prose.** | no — no `?` with 2+ spaces |
-| L2-R06-01 rule 6 skips a second hit | **Fix.** The second hit must match. | **never, and never will** — see below |
-| L2-R06-02 `Mrs.` / `Dr.` / `St.` | **Extend the rule.** Scope change, not a bug fix. | no |
-| L2-R08-01 punctuation after the pronoun | **Fix.** Be consistent with `_first_word`. | ex.2 — rule 8 fires 1x |
+| L2-R05-01 rule 5 whitespace | **Fix per the spec prose. Landed in phase 2 (issue #3).** Spaces and tabs, not `\s` — a `?` at a line break is not the same sentence. | no — no `?` with 2+ spaces |
+| L2-R06-01 rule 6 skips a second hit | **Fix. Landed in phase 2 (issue #3).** The joined paragraph is re-examined, so the second hit matches. | **never, and never will** — see below |
+| L2-R06-02 `Mrs.` / `Dr.` / `St.` | **Extend the rule. Landed in phase 2 (issue #3).** Also a trailing initial. Scope change, not a bug fix. | no |
+| L2-R08-01 punctuation after the pronoun | **Fix. Landed in phase 2 (issue #3).** Consistent with `_first_word`. | ex.2 — rule 8 fires 1x |
 | L2-R08-02 `_PRONOUNS` contains determiners | **Keep the list; amend the spec** to say "a pronoun or determiner" (v04 Q21a). | ex.2 — and the only hit uses a determiner |
 | L2-R09-01 duplicate comparison | **Won't fix for now.** | yes — removes 5 paragraphs |
 | L2-R10-01 the "Then" exception list | **Unimplementable, agreed.** | yes — joins 2 paragraphs |
-| L2-R01-01 unguarded index in rule 1 | **Harden.** Corrected since v03 — it does not crash; the fault is latent. | no — no bare `And` paragraph |
+| L2-R01-01 unguarded index in rule 1 | **Harden. Landed in phase 2 (issue #3).** Never crashed through the pipeline; the guard covers the direct call. | no — no bare `And` paragraph |
 
 Two consequences worth stating plainly:
 

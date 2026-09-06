@@ -96,9 +96,8 @@ He said "I will come." Then he left.
 ## L1-03 — an ellipsis does not end a paragraph
 
 Status: confirmed
-Phase: 2
 
-Your v03 note: "Match exactly the ellipsis and apply **before** period rule?" This case states the consequence of doing that. It is a behaviour **change** — the current code splits here.
+Your v03 note: "Match exactly the ellipsis and apply **before** period rule?" Issue #3 did exactly that: a line ending in `...` is matched before the period rule and glued to the next line as a continuation.
 
 IN
 

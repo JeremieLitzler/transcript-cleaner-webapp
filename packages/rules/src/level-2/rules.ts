@@ -6,13 +6,17 @@ import {
 } from '../python-strings.js';
 
 /**
- * The eleven level-2 rules — a faithful port of the rule functions in
+ * The eleven level-2 rules — ported from the rule functions in
  * `original-scripts/format_advanced.py`.
  *
- * Phase 1 (issue #2) ports them bug-for-bug. Every entry in
- * `docs/port-divergences.md` with a "Fix" disposition is deliberately absent
- * here and lands in phase 2 (issue #3); each one is named in the comment on the
- * rule it belongs to, so nobody has to guess whether a quirk is intentional.
+ * Phase 1 (issue #2) ported them bug-for-bug. Phase 2 (issue #3) applied every
+ * "Fix" disposition in `docs/port-divergences.md`: rule 11's redefined anchor
+ * (L2-R11-01/-02), rule 3's spec prose (L2-R03-01/-02), rule 5's whitespace
+ * (L2-R05-01), rule 6 re-examining a joined paragraph and recognising more
+ * titles (L2-R06-01/-02), rule 8 stripping punctuation after the pronoun
+ * (L2-R08-01), and rule 1's index guard (L2-R01-01). The dispositions left as
+ * is — rule 4's cascade, rule 9's exact compare, rule 10's exception list — are
+ * still named in the comment on the rule they belong to.
  *
  * Each rule takes and returns a `Paragraphs`, and each is exported so it can be
  * tested in isolation — `packages/rules/tests/hand-written-examples/` does
@@ -27,13 +31,17 @@ const PRONOUNS: ReadonlySet<string> = new Set([
 ]);
 
 /**
- * `_TRAILER` — rule 11's anchor.
+ * Rule 11's anchor (L2-R11-01/-02).
  *
- * This exact paragraph occurs in neither golden transcript, so rule 11 has
- * never fired on real text (L2-R11-01/-02). The redefined anchor,
- * `The Church of God the Eternal has just presented`, is a phase-2 change.
+ * The Python's `_TRAILER` was a paragraph *equal to* `The Church of God the
+ * Eternal.`, which level 1 never produces — it glues the short closing lines
+ * into one long paragraph — so rule 11 never fired. Issue #3 redefines it:
+ * remove from and including the first paragraph that *contains* this phrase.
+ * `has just presented` is load-bearing: both transcripts also *open* with
+ * `The Church of God the Eternal presents …`, and a shorter anchor would
+ * truncate the whole document to nothing.
  */
-const TRAILER = 'The Church of God the Eternal.';
+const TRAILER_ANCHOR = 'The Church of God the Eternal has just presented';
 
 /** `_THEN_EXCEPTION_WORDS` — words after "Then " that keep the paragraph separate. */
 const THEN_EXCEPTION_WORDS: ReadonlySet<string> = new Set([
@@ -42,8 +50,16 @@ const THEN_EXCEPTION_WORDS: ReadonlySet<string> = new Set([
 ]);
 
 /**
- * `_first_word` — the first whitespace-delimited token with every
- * non-ASCII-letter stripped out, lowercased.
+ * `_first_word`'s normalisation — a token with every non-ASCII-letter stripped
+ * out, lowercased. Shared by `firstWord`, `firstWordIsAnd` and `isThatPronoun`
+ * so the three stay consistent (that consistency is the point of L2-R08-01).
+ */
+function normaliseToken(token: string): string {
+  return token.replace(/[^a-zA-Z]/g, '').toLowerCase();
+}
+
+/**
+ * `_first_word` — the first whitespace-delimited token, normalised.
  *
  * Throws on an all-whitespace input, exactly as the Python's `text.split()[0]`
  * raises `IndexError`. Unreachable through `Paragraphs.fromText`, which drops
@@ -54,13 +70,13 @@ function firstWord(text: string): string {
   if (words.length === 0) {
     throw new RangeError('firstWord: no words in the given text');
   }
-  return words[0]!.replace(/[^a-zA-Z]/g, '').toLowerCase();
+  return normaliseToken(words[0]!);
 }
 
-/** Rule 11 — remove `The Church of God the Eternal.` and everything after it. */
+/** Rule 11 — remove the closing trailer paragraph and everything after it. */
 export function rule11RemoveTrailer(paras: Paragraphs): Paragraphs {
   for (let i = 0; i < paras.length; i += 1) {
-    if (paras.at(i) === TRAILER) {
+    if (paras.at(i).includes(TRAILER_ANCHOR)) {
       return paras.truncatedTo(i);
     }
   }
@@ -84,32 +100,44 @@ export function rule9RemoveDuplicates(paras: Paragraphs): Paragraphs {
   return result;
 }
 
-/** `_consume_mr_pair` — take one paragraph, or a joined pair, and say how far to advance. */
-function consumeMrPair(
-  result: Paragraphs,
-  paras: Paragraphs,
-  i: number,
-): [Paragraphs, number] {
-  if (paras.at(i).endsWith('Mr.') && i + 1 < paras.length) {
-    return [result.withAppended(paras.at(i) + ' ' + paras.at(i + 1)), i + 2];
-  }
-  return [result.withAppended(paras.at(i)), i + 1];
+/**
+ * Titles rule 6 treats the way the Python treated `Mr.` — a line broken
+ * straight after any of them is a transcription artefact, not a sentence end
+ * (L2-R06-02). The spec names only `Mr.`; extending it is a scope change agreed
+ * in issue #3, not a bug fix.
+ */
+const HONORIFICS: readonly string[] = ['Mr.', 'Mrs.', 'Dr.', 'St.'];
+
+/** A lone capital-letter initial closing the paragraph, e.g. `… preserved through J.` */
+const TRAILING_INITIAL = /(?:^|\s)[A-Z]\.$/;
+
+/** Whether a paragraph ends on a title or initial that a line break should not follow. */
+function endsWithHonorific(paragraph: string): boolean {
+  return (
+    HONORIFICS.some((title) => paragraph.endsWith(title)) ||
+    TRAILING_INITIAL.test(paragraph)
+  );
 }
 
 /**
- * Rule 6 — join a paragraph ending in `Mr.` to the next.
+ * Rule 6 — join a paragraph ending in a title (`Mr.`, `Mrs.`, `Dr.`, `St.`) or
+ * an initial onto the next.
  *
- * Advancing by two means a joined paragraph that itself ends in `Mr.` is never
- * re-examined (L2-R06-01, a phase-2 fix), and only `Mr.` is recognised — not
- * `Mrs.`, `Dr.` or `St.` (L2-R06-02, a phase-2 scope extension).
+ * The join is re-examined: if the joined paragraph itself ends on a title, it
+ * absorbs the following paragraph too (L2-R06-01, an issue #3 fix — the Python
+ * advanced by two and never looked again).
  */
 export function rule6MrJoin(paras: Paragraphs): Paragraphs {
   let result = new Paragraphs([]);
   let i = 0;
   while (i < paras.length) {
-    const [next, advanced] = consumeMrPair(result, paras, i);
-    result = next;
-    i = advanced;
+    let current = paras.at(i);
+    i += 1;
+    while (endsWithHonorific(current) && i < paras.length) {
+      current = current + ' ' + paras.at(i);
+      i += 1;
+    }
+    result = result.withAppended(current);
   }
   return result;
 }
@@ -161,15 +189,16 @@ export function rule10ThenJoin(paras: Paragraphs): Paragraphs {
 /**
  * `_is_that_pronoun` — "That" followed by something in `PRONOUNS`.
  *
- * Unlike `firstWord`, this does not strip punctuation, so `That they, ...`
- * fails to match (L2-R08-01, a phase-2 fix).
+ * Punctuation is stripped from the second word before the lookup, consistent
+ * with `firstWord`, so `That they, in the end, …` now matches (L2-R08-01, an
+ * issue #3 fix).
  */
 function isThatPronoun(paragraph: string): boolean {
   const words = pySplitWhitespace(paragraph);
   return (
     words.length >= 2 &&
     words[0] === 'That' &&
-    PRONOUNS.has(words[1]!.toLowerCase())
+    PRONOUNS.has(normaliseToken(words[1]!))
   );
 }
 
@@ -208,17 +237,20 @@ export function rule4ButButJoin(paras: Paragraphs): Paragraphs {
 /**
  * `_strip_leading_and` — drop a leading `And ` and capitalise what follows.
  *
- * `body[0]` is unguarded, exactly as in the Python (L2-R01-01), and
- * `pyFirstCharacter` throws where Python raises `IndexError`. It cannot be
- * reached through `Paragraphs.fromText`, which strips each paragraph, so
- * `'And '` arrives as `'And'` and fails the prefix test. Hardening it is a
- * phase-2 task.
+ * The Python indexed `body[0]` unguarded (L2-R01-01): unreachable through
+ * `Paragraphs.fromText`, which strips each paragraph so `'And '` arrives as
+ * `'And'` and fails the prefix test, but a real fault now that each rule is a
+ * public, individually callable function. Issue #3 adds the one-line guard —
+ * `'And '` with nothing after it becomes empty rather than throwing.
  */
 function stripLeadingAnd(paragraph: string): string {
   if (!paragraph.startsWith('And ')) {
     return paragraph;
   }
   const body = paragraph.slice(4);
+  if (body === '') {
+    return body;
+  }
   const first = pyFirstCharacter(body);
   return first.toUpperCase() + body.slice(first.length);
 }
@@ -228,22 +260,36 @@ export function rule1RemoveAnd(paras: Paragraphs): Paragraphs {
   return new Paragraphs(paras.toArray().map(stripLeadingAnd));
 }
 
+/** Whether a paragraph's first word is "and", in any case — rule 3's exclusion. */
+function firstWordIsAnd(paragraph: string): boolean {
+  const words = pySplitWhitespace(paragraph);
+  return words.length > 0 && normaliseToken(words[0]!) === 'and';
+}
+
 /**
  * Rule 3 — capitalise a paragraph that starts in lowercase.
  *
- * Fires regardless of what precedes it and with no `and` exclusion, both of
- * which the spec asks for (L2-R03-01 and -02, phase-2 fixes).
+ * Follows the spec prose (L2-R03-01/-02, issue #3 fixes): the previous
+ * paragraph must end with a period, and a leading "and" in any case is
+ * excluded. The Python capitalised any lowercase opening regardless of what
+ * came before it.
  */
 export function rule3CapitaliseFirst(paras: Paragraphs): Paragraphs {
+  const items = paras.toArray();
   return new Paragraphs(
-    paras.toArray().map((p) => {
-      if (p === '') {
-        return p;
+    items.map((paragraph, index) => {
+      if (paragraph === '') {
+        return paragraph;
       }
-      const first = pyFirstCharacter(p);
-      return pyIsLower(first)
-        ? first.toUpperCase() + p.slice(first.length)
-        : p;
+      const previous = index > 0 ? items[index - 1]! : undefined;
+      if (previous === undefined || !previous.endsWith('.')) {
+        return paragraph;
+      }
+      const first = pyFirstCharacter(paragraph);
+      if (!pyIsLower(first) || firstWordIsAnd(paragraph)) {
+        return paragraph;
+      }
+      return first.toUpperCase() + paragraph.slice(first.length);
     }),
   );
 }
@@ -251,8 +297,12 @@ export function rule3CapitaliseFirst(paras: Paragraphs): Paragraphs {
 /**
  * Rule 5 — capitalise the word immediately after a `?` within a paragraph.
  *
- * Matches exactly one space, so two spaces or a tab are missed (L2-R05-01,
- * confirmed as the wanted behaviour).
+ * Fires regardless of the intervening spaces or tabs — one space, several, or a
+ * tab (L2-R05-01, an issue #3 fix; the Python matched a single space only). The
+ * gap is limited to spaces and tabs, not `\s`: level 2 also runs on pasted
+ * middle-pane text where a paragraph can hold a bare newline, and a `?` at a
+ * line break is not the "same sentence" the spec's rule 5 is about. The
+ * whitespace itself is preserved.
  */
 export function rule5CapitaliseAfterQuestion(paras: Paragraphs): Paragraphs {
   return new Paragraphs(
@@ -260,8 +310,9 @@ export function rule5CapitaliseAfterQuestion(paras: Paragraphs): Paragraphs {
       .toArray()
       .map((p) =>
         p.replace(
-          /\? ([a-z])/g,
-          (_match, letter: string) => '? ' + letter.toUpperCase(),
+          /\?([ \t]+)([a-z])/g,
+          (_match, gap: string, letter: string) =>
+            '?' + gap + letter.toUpperCase(),
         ),
       ),
   );

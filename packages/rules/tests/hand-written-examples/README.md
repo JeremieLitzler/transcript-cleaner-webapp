@@ -20,7 +20,7 @@ Every case is a heading that names it, one or more marker lines, and exactly two
 
 Status: `unconfirmed` | `confirmed` | `wont-fix`
 Runs: `level-1` | `level-2` | `rule-<n>`
-Phase: `2` | `llm`
+Phase: `llm`
 
 IN
 
@@ -57,8 +57,8 @@ Give it explicitly when the id does not settle the question. Two situations occu
 
 Optional; absent means the case asserts today. A case that states behaviour the code does not have yet carries a `Phase:` line naming what has to land first, and the suite skips and counts it instead of failing.
 
-- **`Phase: 2`** — the case states what the phase-2 rule changes (issue #3) will do. Phase 1 is a faithful, bug-for-bug port of the Python (issue #2), so these six cases would otherwise fail by design.
-- **`Phase: llm`** — rule 7's target, which needs the LLM work in issue #5.
+- **`Phase: llm`** — rule 7's target, which needs the LLM work in issue #5. The only value in use today.
+- **`Phase: 2`** was carried by the six cases stating the issue-#3 rule changes, while phase 1 (issue #2) was still a faithful, bug-for-bug port of the Python. Issue #3 landed, so every `Phase: 2` line was deleted and those cases now assert. A future deferred phase would reintroduce a value here the same way.
 
 The suite asserts the deferred set against a list in `hand-written-examples.test.ts`, so adding or removing a `Phase:` line is a visible change and not a quiet way to switch a failing test off. Deleting the line is what turns the case on.
 

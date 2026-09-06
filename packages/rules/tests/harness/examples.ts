@@ -18,7 +18,7 @@ import { isRuleId, type RuleId } from '../../src/level-2/pipeline.js';
  *
  *     Status: confirmed | unconfirmed | wont-fix
  *     Runs: level-1 | level-2 | rule-<n>        (optional — inferred from <ID>)
- *     Phase: 2 | llm                            (optional — see `phase` below)
+ *     Phase: llm                               (optional — see `phase` below)
  *
  *     IN
  *
@@ -67,9 +67,10 @@ export interface Case {
   readonly isConfirmed: boolean;
   /**
    * The phase at which this case starts asserting, from an optional `Phase:`
-   * line. Absent (or `1`) means it asserts today. `2` means it states the
-   * behaviour that issue #3 will introduce; `llm` means rule 7's target, which
-   * needs issue #5. Anything other than `1` is skipped and counted.
+   * line. Absent (or `1`) means it asserts today. Anything else is skipped and
+   * counted: `llm` is rule 7's target, which needs issue #5. (`2` marked the
+   * issue-#3 cases while issue #2 was the current phase; issue #3 has landed and
+   * no case carries it any more.)
    */
   readonly phase: string;
   readonly runner: Runner;
