@@ -987,5 +987,3 @@ It's a part of our growth to walk in the footsteps of Jesus Christ.
 If we do that, we can defeat the wrong kind of partiality that God warns us to avoid.
 
 We can be among those who will help serve now and in the future the entire family of man.
-
-The Church of God the Eternal has just presented What is Partiality? A message given by Mr. John Brisby in Eugene, Oregon August 22nd, 2026.

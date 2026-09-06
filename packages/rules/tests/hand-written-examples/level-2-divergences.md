@@ -6,11 +6,11 @@ Every `IN`/`OUT` pair below is the **measured current behaviour** of `original-s
 
 ---
 
-## L2-R11-01 — rule 11 truncates from the first match, including paragraph 1
+## L2-R11-01 — rule 11 can no longer destroy the document
 
-Status: confirmed wont-fix-as-coded — superseded by your redefinition. Edit by Jeremie: Doesn't happen any more.
+Status: confirmed
 
-Current behaviour. Your redefinition (anchor on `The Church of God the Eternal has just presented`) makes this case unreachable, which is the point.
+Issue #3 redefined the anchor: rule 11 now removes from and including the first paragraph that *contains* `The Church of God the Eternal has just presented`. The bare paragraph `The Church of God the Eternal.` no longer matches anything, so the data-loss case is gone — the input passes through untouched.
 
 IN
 
@@ -25,7 +25,11 @@ More content.
 OUT
 
 ```text
+The Church of God the Eternal.
 
+Real content follows here.
+
+More content.
 ```
 
 ---
@@ -81,9 +85,9 @@ He paused there and then went on.
 
 ## L2-R03-01 — rule 3 capitalises regardless of what precedes
 
-Status: confirmed — to be fixed per spec prose
+Status: confirmed
 
-Current behaviour. Per your disposition the spec wins, so after the fix the `OUT` becomes identical to the `IN` (the previous paragraph ends in `?`, not `.`).
+Issue #3 applied the spec prose: rule 3 only capitalises when the previous paragraph ends with a period. Here it ends with `?`, so the paragraph is left alone and the `OUT` is identical to the `IN`.
 
 IN
 
@@ -98,16 +102,16 @@ OUT
 ```text
 Is that so?
 
-Yes it is.
+yes it is.
 ```
 
 ---
 
 ## L2-R03-02 — rule 3 has no "and" exclusion
 
-Status: confirmed — to be fixed per spec prose
+Status: confirmed
 
-Current behaviour. After the fix the `OUT` becomes identical to the `IN`.
+Issue #3 applied the spec prose: a leading "and" in any case is excluded (and, here, the paragraph has no predecessor either). The `OUT` is identical to the `IN`.
 
 IN
 
@@ -120,7 +124,7 @@ Second para.
 OUT
 
 ```text
-And so it begins.
+and so it begins.
 
 Second para.
 ```
@@ -153,9 +157,9 @@ But they haven't and no one else has and we do.
 
 ## L2-R05-01 — rule 5 matches exactly one space
 
-Status: confirmed — to be fixed per spec prose. Edit of Jeremie: the current behaviour is what I want.
+Status: confirmed
 
-Current behaviour. Your v03 note gives the target: `"What is that?  Let's see."`
+Issue #3 applied the spec prose (Q18b): rule 5 capitalises after a `?` regardless of the intervening whitespace, preserving the whitespace itself. Your v03 note gave the target: `"What is that?  Let's see."`
 
 IN
 
@@ -166,17 +170,16 @@ What is that?  let's see.
 OUT
 
 ```text
-What is that?  let's see.
+What is that?  Let's see.
 ```
 
 ---
 
 ## L2-R06-01 — rule 6 does not re-examine a joined paragraph
 
-Status: confirmed — to be fixed. Edit by jeremie: I fixed the example.
-Phase: 2
+Status: confirmed. Edit by jeremie: I fixed the example.
 
-Current behaviour. Your words: "So the second hit must match indeed." After the fix, `and Mr.` joins `John Brisby spoke.` too.
+Your words: "So the second hit must match indeed." Issue #3 made rule 6 re-examine its own joined output, so `and Mr.` joins `John Brisby spoke.` too.
 
 IN
 
@@ -199,9 +202,8 @@ Preserved through Mr. Raymond Cole and Mr. John Brisby spoke.
 ## L2-R06-02 — rule 6 handles only "Mr."
 
 Status: confirmed — scope extension. Edit by jeremie: I fixed the example.
-Phase: 2
 
-Current behaviour. Your words: "Fair point to add support `Mrs.`, `Dr.`, `St.` and initials." This is a change to the spec, not a fix to the code — the spec names only `Mr.` too.
+Your words: "Fair point to add support `Mrs.`, `Dr.`, `St.` and initials." Issue #3 extended rule 6 to those titles and to a trailing initial. This is a change to the spec, not a fix to the code — the spec names only `Mr.` too.
 
 IN
 
@@ -221,10 +223,9 @@ She trained under Dr. Alice Fenwick for a decade.
 
 ## L2-R08-01 — rule 8 fails when punctuation follows the pronoun
 
-Status: confirmed — to be fixed. Edit by jeremie: I fixed the example.
-Phase: 2
+Status: confirmed. Edit by jeremie: I fixed the example.
 
-Current behaviour, both halves. Your words: "Let's be consistence then." After the fix both cases join.
+Your words: "Let's be consistence then." Issue #3 stripped punctuation from the second word before the pronoun lookup, consistent with `_first_word`, so `That they, in the end, …` joins.
 
 IN
 

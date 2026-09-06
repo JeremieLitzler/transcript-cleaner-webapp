@@ -1,12 +1,14 @@
 import { pySplitLines, pyStrip, pyStripEnd } from './python-strings.js';
 
 /**
- * Level 1 — reflow. A faithful port of `original-scripts/format_transcription.py`.
+ * Level 1 — reflow. Ported from `original-scripts/format_transcription.py`.
  *
- * Bug-for-bug by design (issue #2, phase 1). In particular: only `.` ends a
- * paragraph, so a line ending in `?`, `!`, `."` or `...` is glued to the next
- * one. Those are L1-01, L1-02 and L1-03 in `docs/port-divergences.md`; L1-01
- * and L1-02 are intended behaviour, L1-03 is a phase-2 fix (issue #3).
+ * Only `.` ends a paragraph, so a line ending in `?`, `!` or `."` is glued to
+ * the next one — those are L1-01 and L1-02 in `docs/port-divergences.md`, and
+ * both are intended behaviour. L1-03 (a trailing ellipsis) was the one
+ * exception the Python got wrong: `...` ends with `.`, so a trailing-off
+ * sentence was split mid-thought. Issue #3 fixes it — the ellipsis is matched
+ * before the period rule and treated as a continuation.
  */
 
 /** `_format_line` — a line becomes a paragraph break, a continuation, or nothing. */
@@ -14,6 +16,13 @@ function formatLine(line: string): string {
   const stripped = pyStrip(line);
   if (!stripped) {
     return '';
+  }
+  // L1-03: an ellipsis is a trailing-off sentence, not a paragraph boundary, so
+  // it continues like any non-terminal line. This branch exists only to reach
+  // that continuation *before* the period check below, which `...` would
+  // otherwise satisfy.
+  if (stripped.endsWith('...')) {
+    return stripped + ' ';
   }
   if (stripped.endsWith('.')) {
     return stripped + '\n\n';
