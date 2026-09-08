@@ -20,4 +20,18 @@ const cleaned = applyRules(reflowed)
 
 The first names something you can't recover from the code. The second restates the line.
 
+Another pair, the same line both times:
+
+```ts
+// Keep the trailing newline — the goldens carry one and the fixture diff is byte-exact.
+return output + '\n'
+```
+
+```ts
+// append a newline to the output
+return output + '\n'
+```
+
+Drop the `+ '\n'` and the golden tests break. The first comment tells you that; the second re-says the code.
+
 **Review bar:** every comment on a changed line names a why, a constraint, or a caveat that the code beneath it does not already show.
