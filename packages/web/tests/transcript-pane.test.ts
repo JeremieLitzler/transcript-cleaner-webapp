@@ -6,9 +6,13 @@ import TranscriptPane from '../src/components/TranscriptPane.vue';
  * `TranscriptPane` (issue #23). The badge is the load-bearing part of the
  * design: Q13b settled that an upstream edit marks downstream **stale** rather
  * than clearing it, so the badge is the only thing telling the reader that what
- * they are looking at no longer came from what is above it. Its precedence is a
- * small state machine, and a state machine nobody asserts is a state machine
- * that quietly changes.
+ * they are looking at no longer came from what is above it.
+ *
+ * Since issue #46 the pane derives no state of its own: it renders the
+ * `PaneStatus` it is handed, and `useTranscriptStages` owns the
+ * `locked > stale > current > none` precedence that picks it. So the cases
+ * here are one per `PaneStatus` value — the badge text and variant, or its
+ * absence, and the background classes each value re-keys.
  *
  * The styling assertions here name classes, not computed styles: the web
  * package's Vitest config deliberately leaves Tailwind out (issue #22), so a
@@ -19,7 +23,12 @@ type Props = InstanceType<typeof TranscriptPane>['$props'];
 
 function mountPane(props: Partial<Props> = {}, slots?: Record<string, string>) {
   return mount(TranscriptPane, {
-    props: { title: 'Reflowed transcript', modelValue: '', ...props },
+    props: {
+      title: 'Reflowed transcript',
+      modelValue: '',
+      status: 'none',
+      ...props,
+    },
     ...(slots ? { slots } : {}),
   });
 }
@@ -43,24 +52,24 @@ function subtitle(wrapper: ReturnType<typeof mountPane>) {
 }
 
 describe('the TranscriptPane badge', () => {
-  it('shows nothing on an empty, unlocked pane', () => {
-    // The starting state of every pane below the raw one, before anything has
-    // been produced and before anything can be stale.
-    expect(badge(mountPane({ modelValue: '' })).exists()).toBe(false);
+  it('shows no badge for `none`', () => {
+    // The starting state of every pane below the raw one, and of a reflowed
+    // pane emptied by hand after a run: blank, and not an error.
+    expect(badge(mountPane({ status: 'none' })).exists()).toBe(false);
   });
 
-  it('shows `current` once the pane holds a value', () => {
-    const badgeEl = badge(mountPane({ modelValue: 'A paragraph.' }));
+  it('shows `current` with the ok variant', () => {
+    const badgeEl = badge(mountPane({ status: 'current' }));
 
     expect(badgeEl.text()).toBe('current');
     expect(badgeEl.classes()).toContain('badge-ok');
   });
 
-  it('shows `stale` over a value, and still shows the value', () => {
+  it('shows `stale — re-run` with no variant, and still shows the value', () => {
     // The Q13b case in full: the pane says the content is old *and* keeps
     // showing it. Asserting only the badge would leave the half of the
     // decision that matters — that nothing was cleared — unpinned.
-    const wrapper = mountPane({ modelValue: 'A paragraph.', stale: true });
+    const wrapper = mountPane({ modelValue: 'A paragraph.', status: 'stale' });
     const badgeEl = badge(wrapper);
 
     expect(badgeEl.text()).toBe('stale — re-run');
@@ -70,24 +79,24 @@ describe('the TranscriptPane badge', () => {
     expect(badgeEl.classes()).not.toContain('badge-lock');
   });
 
-  it('shows `stale` on a pane that has been emptied but not re-run', () => {
-    // Follows from the precedence above rather than from a rule of its own:
-    // `stale` is checked before the value is, so an emptied pane still asks
-    // to be re-run instead of falling back to the no-badge state.
-    expect(badge(mountPane({ modelValue: '', stale: true })).text()).toBe(
-      'stale — re-run',
-    );
-  });
-
-  it('shows `locked` over both `stale` and a value', () => {
-    // A stage that has never run cannot meaningfully be stale, so `locked`
-    // wins whatever else is set.
-    const badgeEl = badge(
-      mountPane({ modelValue: 'A paragraph.', stale: true, locked: true }),
-    );
+  it('shows `locked` with the lock variant', () => {
+    const badgeEl = badge(mountPane({ status: 'locked' }));
 
     expect(badgeEl.text()).toBe('locked');
     expect(badgeEl.classes()).toContain('badge-lock');
+  });
+
+  it('reads the badge from `status` alone, not from the value it holds', () => {
+    // `modelValue` is content I/O only: a filled textarea under `none` still
+    // shows no badge, and an empty one under `stale` still asks to be re-run.
+    // The precedence that would once have derived these lives in the
+    // composable now.
+    expect(
+      badge(mountPane({ modelValue: 'A paragraph.', status: 'none' })).exists(),
+    ).toBe(false);
+    expect(badge(mountPane({ modelValue: '', status: 'stale' })).text()).toBe(
+      'stale — re-run',
+    );
   });
 });
 
@@ -98,38 +107,38 @@ describe('the TranscriptPane styling', () => {
    * drift toward the page colour. `bg-panel-locked` is a solid stand-in
    * chosen to keep the same "not ready yet" look without touching opacity.
    */
-  it('gives a locked section the locked background, not a dimmed one', () => {
-    const classes = mountPane({ locked: true }).classes();
+  it('gives a `locked` section the locked background, not a dimmed one', () => {
+    const classes = mountPane({ status: 'locked' }).classes();
 
     expect(classes).toContain('bg-panel-locked');
     expect(classes).not.toContain('opacity-55');
   });
 
-  it('leaves an unlocked section on the normal panel background', () => {
-    const classes = mountPane({ locked: false }).classes();
+  it('leaves a non-locked section on the normal panel background', () => {
+    const classes = mountPane({ status: 'current' }).classes();
 
     expect(classes).toContain('bg-panel');
     expect(classes).not.toContain('bg-panel-locked');
   });
 
-  it('gives a locked header the locked head background', () => {
-    const wrapper = mountPane({ locked: true });
+  it('gives a `locked` header the locked head background', () => {
+    const wrapper = mountPane({ status: 'locked' });
 
     expect(wrapper.get('header').classes()).toContain('bg-panel-head-locked');
   });
 
-  it('leaves an unlocked header on the normal head background', () => {
-    const wrapper = mountPane({ locked: false });
+  it('leaves a non-locked header on the normal head background', () => {
+    const wrapper = mountPane({ status: 'current' });
 
     expect(wrapper.get('header').classes()).toContain('bg-panel-head');
   });
 
-  it('mutes the textarea of a stale pane', () => {
+  it('mutes the textarea of a `stale` pane', () => {
     // The visual half of the stale badge: the text is greyed rather than
     // removed, so it reads as superseded instead of as absent.
     const classes = mountPane({
       modelValue: 'A paragraph.',
-      stale: true,
+      status: 'stale',
     })
       .get('textarea')
       .classes();
@@ -138,20 +147,16 @@ describe('the TranscriptPane styling', () => {
     expect(classes).toContain('text-[#8b8b84]');
   });
 
-  it('greys the textarea of a locked pane', () => {
+  it('greys the textarea of a `locked` pane', () => {
     // The counterpart to the dimmed section, and the visual half of the
-    // `locked` badge. A pane that is locked *and* stale emits both background
-    // classes, and which one wins is decided by stylesheet order — something a
-    // suite that never computes styles cannot observe. So that combination is
-    // asserted on the badge, where the precedence is decided in code, and
-    // deliberately not here.
-    expect(mountPane({ locked: true }).get('textarea').classes()).toContain(
-      'bg-[#f4f4f0]',
-    );
+    // `locked` badge.
+    expect(
+      mountPane({ status: 'locked' }).get('textarea').classes(),
+    ).toContain('bg-[#f4f4f0]');
   });
 
-  it('leaves a current textarea transparent', () => {
-    const classes = mountPane({ modelValue: 'A paragraph.' })
+  it('leaves a `current` textarea transparent', () => {
+    const classes = mountPane({ modelValue: 'A paragraph.', status: 'current' })
       .get('textarea')
       .classes();
 

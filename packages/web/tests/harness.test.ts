@@ -14,7 +14,7 @@ import TranscriptPane from '../src/components/TranscriptPane.vue';
 describe('the web test harness', () => {
   it('mounts a component and renders its title', () => {
     const wrapper = mount(TranscriptPane, {
-      props: { title: 'Raw transcript', modelValue: '' },
+      props: { title: 'Raw transcript', modelValue: '', status: 'none' },
     });
 
     // The title span specifically, not the pane's text as a whole: an

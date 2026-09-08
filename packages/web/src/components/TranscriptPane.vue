@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed } from 'vue';
+import type { PaneStatus } from '../composables/useTranscriptStages';
 
 /**
  * One of the three stages, in the shape settled by Q16 variant C: a titled
@@ -9,6 +10,11 @@ import { computed } from 'vue';
  * edit marks downstream **stale** rather than clearing it, so a pane has to be
  * able to say "what you are reading did not come from what is above it" while
  * still showing it.
+ *
+ * This component derives no state of its own: `status` is handed to it already
+ * ranked by `useTranscriptStages`, and the badge, the dimmed background and the
+ * locked look all follow from it. `modelValue` is the textarea's content
+ * binding and nothing else.
  */
 const props = defineProps<{
   title: string;
@@ -20,10 +26,12 @@ const props = defineProps<{
   sub?: string;
   modelValue: string;
   readonly?: boolean;
-  /** The stage has never run. The pane is dimmed and says so. */
-  locked?: boolean;
-  /** Something upstream changed since this was produced. */
-  stale?: boolean;
+  /**
+   * The pane's whole display state, ranked in `useTranscriptStages` under
+   * `locked > stale > current > none`. Orthogonal to `readonly`: `locked`
+   * does not imply read-only.
+   */
+  status: PaneStatus;
   placeholder?: string;
 }>();
 
@@ -36,22 +44,32 @@ defineEmits<{ 'update:modelValue': [value: string] }>();
  */
 defineSlots<{ sub?: () => unknown }>();
 
-const badge = computed(() => {
-  if (props.locked) return { text: 'locked', variant: 'badge-lock' };
-  if (props.stale) return { text: 'stale — re-run', variant: '' };
-  if (props.modelValue !== '') return { text: 'current', variant: 'badge-ok' };
-  return null;
-});
+/**
+ * The `status` > badge mapping. Text and variant per value are the design's,
+ * preserved exactly; `none` shows no badge. The precedence that picks the
+ * `status` lives in `useTranscriptStages`, not here.
+ */
+const BADGE_BY_STATUS: Record<
+  PaneStatus,
+  { text: string; variant: string } | null
+> = {
+  none: null,
+  current: { text: 'current', variant: 'badge-ok' },
+  stale: { text: 'stale — re-run', variant: '' },
+  locked: { text: 'locked', variant: 'badge-lock' },
+};
+
+const badge = computed(() => BADGE_BY_STATUS[props.status]);
 </script>
 
 <template>
   <section
     class="flex min-h-0 min-w-0 flex-col overflow-hidden rounded-[10px] border border-line"
-    :class="locked ? 'bg-panel-locked' : 'bg-panel'"
+    :class="status === 'locked' ? 'bg-panel-locked' : 'bg-panel'"
   >
     <header
       class="flex flex-none items-center gap-2 border-b border-line px-[10px] py-2"
-      :class="locked ? 'bg-panel-head-locked' : 'bg-panel-head'"
+      :class="status === 'locked' ? 'bg-panel-head-locked' : 'bg-panel-head'"
     >
       <span class="text-xs font-[650]">{{ title }}</span>
       <span class="text-[11px] text-muted">
@@ -65,8 +83,8 @@ const badge = computed(() => {
     <textarea
       class="min-h-0 flex-1 resize-none border-0 p-3 font-mono text-xs leading-[1.65] outline-none"
       :class="[
-        stale ? 'bg-[#fbfaf5] text-[#8b8b84]' : 'bg-transparent',
-        locked ? 'bg-[#f4f4f0]' : '',
+        status === 'stale' ? 'bg-[#fbfaf5] text-[#8b8b84]' : 'bg-transparent',
+        status === 'locked' ? 'bg-[#f4f4f0]' : '',
       ]"
       :value="modelValue"
       :readonly="readonly"

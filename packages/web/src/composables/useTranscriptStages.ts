@@ -6,6 +6,22 @@ import {
 } from '@transcript-cleaner/rules';
 
 /**
+ * What a pane reports for display: the machine state (`ranLevel1`, the stale
+ * refs, pane emptiness) collapsed into one value under the precedence
+ * `locked > stale > current > none`. This enum is the whole state surface
+ * `TranscriptPane` renders from, and the precedence that picks it lives in the
+ * status computeds below and nowhere else.
+ *
+ * - `none` — blank, and that is not an error (the raw pane before anything is
+ *   typed; a reflowed pane emptied by hand after a run).
+ * - `current` — holds text that still matches its inputs.
+ * - `stale` — holds old text because something upstream changed; the text is
+ *   kept, not cleared.
+ * - `locked` — the stage has never produced anything.
+ */
+export type PaneStatus = 'none' | 'current' | 'stale' | 'locked';
+
+/**
  * The three-stage machine of Q13b, lifted out of `App.vue` so it has an
  * interface rather than only an implementation. The stages run raw > reflowed >
  * cleaned; level 2 is gated on level 1 having run; an upstream edit marks what
@@ -32,14 +48,23 @@ export interface TranscriptStages {
   readonly canRunLevel1: ComputedRef<boolean>;
   /** The Q13b gate: level 1 has run, so level 2 may. */
   readonly canRunLevel2: ComputedRef<boolean>;
-  /** Level 1 has never run; the reflowed pane is locked. */
-  readonly reflowedLocked: ComputedRef<boolean>;
-  /** Level 2 has produced nothing yet; the cleaned pane is locked. */
-  readonly cleanedLocked: ComputedRef<boolean>;
-  /** The raw pane changed since this reflowed text was produced. */
-  readonly reflowedStale: ComputedRef<boolean>;
-  /** Something upstream changed since this cleaned text was produced. */
-  readonly cleanedStale: ComputedRef<boolean>;
+
+  /**
+   * The raw pane's display status: `current` while it holds text to reflow,
+   * `none` while it is blank.
+   */
+  readonly rawStatus: ComputedRef<PaneStatus>;
+  /**
+   * The reflowed pane's display status: `locked` until level 1 has run;
+   * `stale` once the raw pane changed under it; `none` if it was emptied by
+   * hand after a run; else `current`.
+   */
+  readonly reflowedStatus: ComputedRef<PaneStatus>;
+  /**
+   * The cleaned pane's display status: `locked` while it is empty; `stale`
+   * once something upstream changed under it; else `current`.
+   */
+  readonly cleanedStatus: ComputedRef<PaneStatus>;
 
   /** Record a raw-pane edit. Marks the reflowed pane stale once level 1 has run. */
   editRaw(value: string): void;
@@ -132,10 +157,21 @@ export function useTranscriptStages(): TranscriptStages {
     cleaned: computed(() => cleaned.value),
     canRunLevel1: computed(() => raw.value.trim() !== ''),
     canRunLevel2: computed(() => ranLevel1.value),
-    reflowedLocked: computed(() => !ranLevel1.value),
-    cleanedLocked: computed(() => cleaned.value === ''),
-    reflowedStale: computed(() => reflowedStale.value),
-    cleanedStale: computed(() => cleanedStale.value),
+    // The `locked > stale > current > none` precedence, written once, here.
+    rawStatus: computed<PaneStatus>(() =>
+      raw.value.trim() !== '' ? 'current' : 'none',
+    ),
+    reflowedStatus: computed<PaneStatus>(() => {
+      if (!ranLevel1.value) return 'locked';
+      if (reflowedStale.value) return 'stale';
+      if (reflowed.value === '') return 'none';
+      return 'current';
+    }),
+    cleanedStatus: computed<PaneStatus>(() => {
+      if (cleaned.value === '') return 'locked';
+      if (cleanedStale.value) return 'stale';
+      return 'current';
+    }),
     editRaw,
     editReflowed,
     runLevel1,
