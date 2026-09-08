@@ -3,19 +3,25 @@ import { describe, expect, it } from 'vitest';
 import App from '../src/App.vue';
 
 /**
- * `App.vue` (issue #24) — the three-stage state machine of Q13b, driven the way
- * a user drives it.
+ * `App.vue` — the wiring between the toolbar, the rules drawer and the
+ * `useTranscriptStages` composable (issues #24, #40, #41).
+ *
+ * The gate, the stale propagation and the clearing are the composable's
+ * behaviour and are pinned in `use-transcript-stages.test.ts`. What stays here
+ * is what only a mounted `App.vue` can prove: that a button or textarea is
+ * actually wired to the composable action behind it, that the rules drawer's
+ * own logic works, and that the page's structure and accessibility affordances
+ * are in place.
  *
  * Everything below goes through the rendered buttons, textareas and checkboxes
- * rather than through the component's refs. The refs are not the contract: a
- * rewiring that leaves `runLevel1` correct but stops the button reaching it is
- * exactly the regression this suite exists to catch, and a test that reached in
- * and called the function would sail straight past it.
+ * rather than the component's internals. A rewiring that leaves the composable
+ * correct but stops the button reaching it is exactly the regression this suite
+ * exists to catch.
  *
  * The badge wording asserted here belongs to `TranscriptPane` and is pinned by
  * `transcript-pane.test.ts`. It is read here as the pane's observable state —
  * `locked`, `current`, `stale — re-run` — because the props behind it are what
- * `App.vue` decides.
+ * `App.vue` wires from the composable.
  */
 
 /**
@@ -177,108 +183,55 @@ async function mountCleaned(raw = RAW): Promise<Wrapper> {
   return wrapper;
 }
 
-describe('the App gate', () => {
-  it('disables Reflow while the raw pane is empty', () => {
+describe('the App toolbar wiring', () => {
+  it('binds Reflow to the raw-pane gate', async () => {
+    // `:disabled="!canRunLevel1"`. The gate's own edges — whitespace, an empty
+    // string — are the composable's, pinned in use-transcript-stages.test.ts;
+    // here the point is only that the button reads it.
     expect(button(mountApp(), 'Reflow').attributes('disabled')).toBeDefined();
-  });
 
-  it('keeps Reflow disabled for whitespace alone', async () => {
-    // The gate is `raw.trim()`, not `raw`: a pane holding only newlines has
-    // nothing to reflow, and level 1 would answer with an empty string.
-    const wrapper = await mountWithRaw('  \n\n  ');
-
-    expect(button(wrapper, 'Reflow').attributes('disabled')).toBeDefined();
-  });
-
-  it('enables Reflow once the raw pane holds text', async () => {
     const wrapper = await mountWithRaw();
-
     expect(button(wrapper, 'Reflow').attributes('disabled')).toBeUndefined();
   });
 
-  it('disables Apply rules until level 1 has run, and says why', async () => {
-    // The Q13b gate. Level 2 reads the reflowed pane, so it cannot run before
-    // anything has filled it, and the title is the only explanation the
-    // disabled button offers.
-    const wrapper = await mountWithRaw();
-    const applyRules = button(wrapper, 'Apply rules');
-
-    expect(applyRules.attributes('disabled')).toBeDefined();
-    expect(applyRules.attributes('title')).toBe('Level 1 must run first');
-  });
-
-  it('enables Apply rules after a reflow and drops the explanation', async () => {
-    const wrapper = await mountReflowed();
-    const applyRules = button(wrapper, 'Apply rules');
-
-    expect(applyRules.attributes('disabled')).toBeUndefined();
-    expect(applyRules.attributes('title')).toBeUndefined();
-  });
-
-  it('locks the reflowed pane until level 1 has run', async () => {
-    const wrapper = await mountWithRaw();
-
-    expect(badge(wrapper, 'Reflowed transcript')).toBe('locked');
-  });
-
-  it('locks the cleaned pane until level 2 has run', async () => {
-    // The cleaned pane's lock keys on its own emptiness rather than on a
-    // `ranLevel2` flag, so running level 1 must not unlock it.
-    const wrapper = await mountReflowed();
-
-    expect(badge(wrapper, 'Cleaned transcript')).toBe('locked');
-  });
-});
-
-describe('the App stages', () => {
-  it('fills the reflowed pane from the raw pane', async () => {
+  it('runs level 1 from the raw pane into the reflowed pane', async () => {
+    // The Reflow button reaches `runLevel1`, and its result lands in the
+    // middle pane.
     const wrapper = await mountReflowed();
 
     expect(paneText(wrapper, 'Reflowed transcript')).toBe(REFLOWED);
     expect(badge(wrapper, 'Reflowed transcript')).toBe('current');
   });
 
-  it('fills the cleaned pane from the reflowed pane', async () => {
+  it('binds Apply rules to the Q13b gate, and says why it is closed', async () => {
+    // `:disabled="!canRunLevel2"` and the `title` that is the only explanation
+    // a disabled button offers.
+    const before = await mountWithRaw();
+    const applyBefore = button(before, 'Apply rules');
+    expect(applyBefore.attributes('disabled')).toBeDefined();
+    expect(applyBefore.attributes('title')).toBe('Level 1 must run first');
+
+    const after = await mountReflowed();
+    const applyAfter = button(after, 'Apply rules');
+    expect(applyAfter.attributes('disabled')).toBeUndefined();
+    expect(applyAfter.attributes('title')).toBeUndefined();
+  });
+
+  it('runs level 2 from the reflowed pane into the cleaned pane', async () => {
+    // The Apply rules button reaches `applyRules`, which hands the drawer's
+    // rule ids to `runLevel2`.
     const wrapper = await mountCleaned();
 
     expect(paneText(wrapper, 'Cleaned transcript')).toBe(CLEANED);
     expect(badge(wrapper, 'Cleaned transcript')).toBe('current');
   });
-
-  it('leaves the raw pane untouched by either stage', async () => {
-    const wrapper = await mountCleaned();
-
-    expect(paneText(wrapper, 'Raw transcript')).toBe(RAW);
-  });
-
-  it('applies the rules to the reflowed pane as it stands, not to a fresh level-1 run', async () => {
-    // Q13b's repair point. Level 2 must read what is in the middle pane,
-    // hand edits included; re-running level 1 here would silently discard
-    // them, and the cleaned text is the only place that would show it.
-    const wrapper = await mountReflowed();
-
-    await typeInto(wrapper, 'Reflowed transcript', 'A hand-repaired paragraph.');
-    await button(wrapper, 'Apply rules').trigger('click');
-
-    expect(paneText(wrapper, 'Cleaned transcript')).toBe(
-      'A hand-repaired paragraph.',
-    );
-  });
-
-  it('re-reflows from the edited raw pane', async () => {
-    const wrapper = await mountReflowed();
-
-    await typeInto(wrapper, 'Raw transcript', 'A replacement transcript.');
-    await button(wrapper, 'Reflow').trigger('click');
-
-    expect(paneText(wrapper, 'Reflowed transcript')).toBe(
-      'A replacement transcript.',
-    );
-  });
 });
 
-describe('the App stale propagation', () => {
-  it('marks the reflowed pane stale when the raw pane is edited', async () => {
+describe('the App pane wiring', () => {
+  it('routes a raw-pane edit through `editRaw`', async () => {
+    // The textarea's `@update:model-value` reaches the composable: the
+    // observable proof is the reflowed pane going stale, which only `editRaw`
+    // triggers.
     const wrapper = await mountReflowed();
 
     await typeInto(wrapper, 'Raw transcript', `${RAW}\nA later thought.`);
@@ -286,100 +239,26 @@ describe('the App stale propagation', () => {
     expect(badge(wrapper, 'Reflowed transcript')).toBe('stale — re-run');
   });
 
-  it('keeps the reflowed text while it is stale', async () => {
-    // The half of Q13b that is easiest to lose: an upstream edit marks, it
-    // never clears. The reflowed pane holds the user's hand repairs until they
-    // choose to re-run, and re-running is their decision to discard them.
-    const wrapper = await mountReflowed();
+  it('routes a reflowed-pane edit through `editReflowed`', async () => {
+    const wrapper = await mountCleaned();
 
-    await typeInto(wrapper, 'Raw transcript', 'A replacement transcript.');
+    await typeInto(wrapper, 'Reflowed transcript', 'A hand-repaired paragraph.');
 
-    expect(paneText(wrapper, 'Reflowed transcript')).toBe(REFLOWED);
+    expect(badge(wrapper, 'Cleaned transcript')).toBe('stale — re-run');
   });
 
-  it('leaves the reflowed pane locked when the raw pane is edited before any reflow', async () => {
-    // A stage that has never run cannot be out of date, so an edit before the
-    // first reflow has nothing downstream to mark.
+  it('wires the reflowed pane lock to the composable', async () => {
     const wrapper = await mountWithRaw();
-
-    await typeInto(wrapper, 'Raw transcript', `${RAW}\nA later thought.`);
 
     expect(badge(wrapper, 'Reflowed transcript')).toBe('locked');
   });
 
-  it('marks both downstream panes stale on one raw edit', async () => {
-    // The two flags are set by the same handler, and this is the case a user
-    // actually hits: everything has run, then the raw pane changes. Asserted
-    // together rather than in two scenarios so a handler that sets one and
-    // forgets the other fails here, not only by inference from two passes.
-    const wrapper = await mountCleaned();
-
-    await typeInto(wrapper, 'Raw transcript', `${RAW}\nA later thought.`);
-
-    expect(badge(wrapper, 'Reflowed transcript')).toBe('stale — re-run');
-    expect(badge(wrapper, 'Cleaned transcript')).toBe('stale — re-run');
-    expect(paneText(wrapper, 'Cleaned transcript')).toBe(CLEANED);
-  });
-
-  it('marks the cleaned pane stale when the reflowed pane is edited', async () => {
-    // The middle pane is editable, which makes it an upstream of its own.
-    const wrapper = await mountCleaned();
-
-    await typeInto(wrapper, 'Reflowed transcript', 'A hand-repaired paragraph.');
-
-    expect(badge(wrapper, 'Cleaned transcript')).toBe('stale — re-run');
-  });
-
-  it('marks the cleaned pane stale when level 1 is re-run', async () => {
-    const wrapper = await mountCleaned();
-
-    await button(wrapper, 'Reflow').trigger('click');
-
-    expect(badge(wrapper, 'Cleaned transcript')).toBe('stale — re-run');
-  });
-
-  it('leaves an empty cleaned pane locked rather than stale', async () => {
-    // A stage that has produced nothing is not out of date, it has simply not
-    // run. `markCleanedStale` says so by guarding on the pane holding
-    // something, and the pane says so by locking on the same emptiness — the
-    // second is what a test can see, so a lost guard would not show up here.
+  it('wires the cleaned pane lock to the composable', async () => {
+    // Keyed on the cleaned pane's own emptiness, so running level 1 must not
+    // unlock it.
     const wrapper = await mountReflowed();
-
-    await typeInto(wrapper, 'Raw transcript', 'A replacement transcript.');
 
     expect(badge(wrapper, 'Cleaned transcript')).toBe('locked');
-  });
-});
-
-describe('the App clearing of stale', () => {
-  it('clears the reflowed badge when level 1 is re-run', async () => {
-    const wrapper = await mountReflowed();
-    await typeInto(wrapper, 'Raw transcript', 'A replacement transcript.');
-
-    await button(wrapper, 'Reflow').trigger('click');
-
-    expect(badge(wrapper, 'Reflowed transcript')).toBe('current');
-  });
-
-  it('clears the cleaned badge when level 2 is re-run', async () => {
-    const wrapper = await mountCleaned();
-    await typeInto(wrapper, 'Reflowed transcript', 'A hand-repaired paragraph.');
-
-    await button(wrapper, 'Apply rules').trigger('click');
-
-    expect(badge(wrapper, 'Cleaned transcript')).toBe('current');
-  });
-
-  it('does not clear the cleaned badge when only level 1 is re-run', async () => {
-    // Re-running the upstream stage cannot make the downstream one current
-    // again — it is one more upstream change.
-    const wrapper = await mountCleaned();
-    await typeInto(wrapper, 'Raw transcript', 'A replacement transcript.');
-
-    await button(wrapper, 'Reflow').trigger('click');
-
-    expect(badge(wrapper, 'Reflowed transcript')).toBe('current');
-    expect(badge(wrapper, 'Cleaned transcript')).toBe('stale — re-run');
   });
 });
 
@@ -431,6 +310,7 @@ describe('the App preset choice', () => {
   });
 
   it('marks the cleaned pane stale', async () => {
+    // `pickPreset` reaches the composable's `markCleanedStale`.
     const wrapper = await mountCleaned();
     await openDrawer(wrapper);
 
@@ -449,9 +329,7 @@ describe('the App preset choice', () => {
 
     await button(wrapper, 'Apply rules').trigger('click');
 
-    expect(paneText(wrapper, 'Cleaned transcript')).toBe(
-      CLEANED_WITHOUT_RULE_2,
-    );
+    expect(paneText(wrapper, 'Cleaned transcript')).toBe(CLEANED_WITHOUT_RULE_2);
   });
 });
 
@@ -505,9 +383,7 @@ describe('the App rule toggles', () => {
 
     await button(wrapper, 'Apply rules').trigger('click');
 
-    expect(paneText(wrapper, 'Cleaned transcript')).toBe(
-      CLEANED_WITHOUT_RULE_2,
-    );
+    expect(paneText(wrapper, 'Cleaned transcript')).toBe(CLEANED_WITHOUT_RULE_2);
   });
 });
 
