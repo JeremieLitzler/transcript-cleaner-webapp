@@ -73,6 +73,28 @@ describe('the gate', () => {
     expect(s.canRunLevel2.value).toBe(true);
   });
 
+  it('makes a direct runLevel1 call inert while the raw pane is blank', () => {
+    // The gate lives at the interface, not only on the disabled button.
+    const s = useTranscriptStages();
+    s.editRaw('  \n\n  ');
+
+    s.runLevel1();
+
+    expect(s.reflowed.value).toBe('');
+    expect(s.canRunLevel2.value).toBe(false);
+    expect(s.reflowedLocked.value).toBe(true);
+  });
+
+  it('makes a direct runLevel2 call inert until level 1 has run', () => {
+    const s = useTranscriptStages();
+    s.editRaw(RAW);
+
+    s.runLevel2(ALL_RULES);
+
+    expect(s.cleaned.value).toBe('');
+    expect(s.cleanedLocked.value).toBe(true);
+  });
+
   it('locks the reflowed pane until level 1 runs', () => {
     const s = useTranscriptStages();
     s.editRaw(RAW);
