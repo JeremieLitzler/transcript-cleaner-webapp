@@ -30,10 +30,9 @@ const {
   cleaned,
   canRunLevel1,
   canRunLevel2,
-  reflowedLocked,
-  cleanedLocked,
-  reflowedStale,
-  cleanedStale,
+  rawStatus,
+  reflowedStatus,
+  cleanedStatus,
   editRaw,
   editReflowed,
   runLevel1,
@@ -104,6 +103,7 @@ function toggleRule(id: RuleId) {
         title="Raw transcript"
         placeholder="Paste a transcript here"
         :model-value="raw"
+        :status="rawStatus"
         @update:model-value="editRaw"
       >
         <!-- The space in `'paste '` is authored, not left to the compiler's
@@ -122,8 +122,7 @@ function toggleRule(id: RuleId) {
         title="Reflowed transcript"
         sub="level 1 · editable"
         :model-value="reflowed"
-        :locked="reflowedLocked"
-        :stale="reflowedStale"
+        :status="reflowedStatus"
         @update:model-value="editReflowed"
       />
       <TranscriptPane
@@ -131,8 +130,7 @@ function toggleRule(id: RuleId) {
         sub="level 2 · read-only"
         :model-value="cleaned"
         readonly
-        :locked="cleanedLocked"
-        :stale="cleanedStale"
+        :status="cleanedStatus"
       />
     </main>
 
