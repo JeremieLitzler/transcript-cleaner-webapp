@@ -45,11 +45,15 @@ export interface TranscriptStages {
   editRaw(value: string): void;
   /** Record a reflowed-pane edit. Marks the cleaned pane stale. */
   editReflowed(value: string): void;
-  /** Run level 1 over the raw pane, filling the reflowed pane. */
+  /**
+   * Run level 1 over the raw pane, filling the reflowed pane. Inert while the
+   * raw pane is blank — the same gate `canRunLevel1` reports.
+   */
   runLevel1(): void;
   /**
    * Run level 2 over the reflowed pane *as it stands* — hand edits included —
-   * filling the cleaned pane. Never re-runs level 1.
+   * filling the cleaned pane. Never re-runs level 1, and inert until level 1
+   * has run: the Q13b gate holds here, not only on the button.
    */
   runLevel2(enabledRuleIds: readonly RuleId[]): void;
   /**
@@ -96,6 +100,11 @@ export function useTranscriptStages(): TranscriptStages {
   }
 
   function runLevel1() {
+    // The gate is part of the interface, not just the button's `:disabled`:
+    // a blank raw pane has nothing to reflow, so a direct call is inert.
+    if (raw.value.trim() === '') {
+      return;
+    }
     reflowed.value = formatLevel1(raw.value);
     ranLevel1.value = true;
     reflowedStale.value = false;
@@ -108,6 +117,11 @@ export function useTranscriptStages(): TranscriptStages {
    * re-running level 1 here would silently discard whatever was fixed by hand.
    */
   function runLevel2(enabledRuleIds: readonly RuleId[]) {
+    // The Q13b gate, enforced at the interface: level 2 cannot run until
+    // level 1 has filled the reflowed pane.
+    if (!ranLevel1.value) {
+      return;
+    }
     cleaned.value = formatLevel2(reflowed.value, { enabledRuleIds });
     cleanedStale.value = false;
   }

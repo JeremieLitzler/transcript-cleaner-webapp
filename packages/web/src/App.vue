@@ -47,11 +47,6 @@ const drawerOpen = ref(false);
 
 const preset = computed(() => presetById(presetId.value));
 
-/** Hand the drawer's current rule selection to level 2. */
-function applyRules() {
-  runLevel2(enabledRuleIds.value);
-}
-
 function pickPreset(id: string) {
   presetId.value = id;
   enabledRuleIds.value = [...presetById(id).ruleIds];
@@ -86,7 +81,7 @@ function toggleRule(id: RuleId) {
         :class="{ 'btn-ghost': !canRunLevel2 }"
         :disabled="!canRunLevel2"
         :title="canRunLevel2 ? undefined : 'Level 1 must run first'"
-        @click="applyRules"
+        @click="runLevel2(enabledRuleIds)"
       >
         Apply rules
       </button>
