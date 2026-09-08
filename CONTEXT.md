@@ -1,6 +1,6 @@
 # CONTEXT — Transcript Cleaner WebApp
 
-Project glossary and settled decisions. Written from the grilling rounds in `docs/grillings/2026-09-01-webapp-scope/`. This is a living document: it records what is decided, not what is proposed. Anything still open lives in the current grilling round, not here.
+Project glossary and settled decisions. Written from the grilling rounds in `docs/grillings/`. This is a living document: it records what is decided, not what is proposed. Anything still open lives in the current grilling round, not here.
 
 ## The three artefacts
 
@@ -27,6 +27,17 @@ Level 2 only operates correctly on output that level 1 has produced. That orderi
 
 A **preset** is a named set of level-2 rules with a default on/off state for each. Level 1 has nothing to configure, so presets apply to level 2 alone. v1 ships two: **COGE (English)** and **Universal (any language)** — see _Presets shipped_ below.
 
+## Pane status
+
+Each of the three panes reports one **`PaneStatus`** — the single value that drives its badge and its dimmed / greyed treatment. `useTranscriptStages` computes it per pane (`rawStatus`, `reflowedStatus`, `cleanedStatus`); `TranscriptPane` renders it and derives no state of its own. The precedence, applied once in the composable, is `locked` > `stale` > `current` > `none`.
+
+| Value         | What it means                                                                                                        | Reached by                                                                                                        |
+| ------------- | ------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------- |
+| **`locked`**  | The stage has never produced this pane's content. Shown dimmed.                                                     | `reflowed` (level 1 has not run), `cleaned` (level 2 has not run)                                              |
+| **`stale`**   | Something upstream changed since this content was produced. It is kept, not cleared, and the badge asks for a re-run. | `reflowed` (raw edited since the reflow), `cleaned` (reflowed pane or rule set changed since the clean)        |
+| **`current`** | The content matches its inputs.                                                                                    | all three panes                                                                                               |
+| **`none`**    | The pane is blank and that is not an error — no badge.                                                              | `raw` (empty), `reflowed` (emptied by hand after a run). Never `cleaned` — for that pane emptiness _is_ `locked`. |
+
 ## Settled scope for v1
 
 - **Rule set** — Corpus-specific now, structured as a named preset. _(Q1)_
@@ -43,6 +54,7 @@ A **preset** is a named set of level-2 rules with a default on/off state for eac
 - **Hosting** — Netlify, static only. No `functions` directory until rule 7 has its own round. _(Q11b)_
 - **Stages** — Two visible stages with a gate: level 2 cannot run before level 1. Editing the raw pane marks downstream **stale** (dimmed, with a re-run badge) without clearing it. _(Q13b)_
 - **Middle pane** — The reflowed pane is editable, and "Apply rules" uses its current content, not a fresh level-1 run. It is the repair point between two lossy stages. _(Q13b)_
+- **Pane status** — Each pane's display state is one `PaneStatus` (`none | current | stale | locked`), computed in `useTranscriptStages` and rendered by `TranscriptPane`. It replaced four boolean computeds (`reflowedLocked`, `cleanedLocked`, `reflowedStale`, `cleanedStale`) whose `locked > stale > current > none` precedence had been split across the composable, `App.vue` and the component's `badge` computed; that precedence now lives in the composable alone, and `TranscriptPane` derives no state of its own. All three panes share the type — the raw pane reaches only `none` / `current`. `canRunLevel1` and `canRunLevel2` stay as named computeds. See the _Pane status_ glossary section above. _(issue #43, grilling `docs/grillings/2026-09-08-transcript-pane-status/`)_
 - **Verification** — Golden transcripts (`packages/rules/tests/golden-transcripts/`) as the regression net, hand-written examples (`packages/rules/tests/hand-written-examples/`) as the per-rule specification, and `packages/rules/tests/python-semantics.test.ts` for the places Python and JavaScript string methods disagree, which no transcript in the corpus can reach. The UI has a fourth means: component tests in `packages/web/tests/`, mounting SFCs under **`happy-dom`** — chosen over `jsdom` for startup speed, to be revisited only if a test needs a DOM API it lacks. Its Vitest config carries the `vue()` plugin but deliberately not `tailwindcss()`, because these tests assert rendered structure and never computed styles. Logic lifted out of a component into a composable is tested a fifth way: `useTranscriptStages` (issue #40) is Reactivity-only, so its tests call it directly and read the refs it returns rather than mounting anything, and `app.test.ts` keeps only the checks that a control reaches its composable action. _(Q15, L1-07, issue #22, issue #40)_
 - **Preset UI** — A preset list. Picking one reveals its rules, all checked; the user unchecks what they do not want. Shape chosen from the prototype: **variant C** — a toolbar chip (`COGE (English) · 11/11 rules`) opening a drawer with presets on the left and rules on the right. Chosen because it leaves the most room for the transcripts. _(Q16, prototype)_
 - **Backlog** — Issues for actionable defects; `docs/port-divergences.md` stays the complete record. _(Q17)_
@@ -83,7 +95,7 @@ A **preset** is a named set of level-2 rules with a default on/off state for eac
 | `docs/port-divergences.md`                    | Every place the code and the spec disagree, each with a measured example and a disposition. The complete record. |
 | `packages/rules/tests/golden-transcripts/`    | Real before/after pairs. Verified byte-identical to the Python's output.                                         |
 | `packages/rules/tests/hand-written-examples/` | One case per rule and per divergence, in isolation.                                                              |
-| `docs/grillings/`                             | The scope grilling, one file per round.                                                                          |
+| `docs/grillings/`                             | The grillings, one directory per session, one file per round.                                                    |
 | `.github/workflows/`                          | Both pipelines: `pr-build.yml` checks every pull request, `release-bash.yml` previews and publishes releases.     |
 | `scripts/release/`                            | The vendored `release.sh` and its provenance. An unmodified upstream copy — read `VENDORED.md` before touching it. |
 | `netlify.toml`                                | The build contract for the deploy. The trigger lives in Netlify's Git integration, not in this repo.             |
