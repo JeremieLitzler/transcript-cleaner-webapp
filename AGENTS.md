@@ -19,3 +19,8 @@ See `docs/agents/triage-labels.md`.
 
 Single-context: one `CONTEXT.md` at the repo root, ADRs under `docs/adr/`.
 See `docs/agents/domain.md`.
+
+### Coding standards
+
+Comments carry the *why*, not the *what*; one line; match the file's rate.
+See `docs/agents/coding-standards.md`.
