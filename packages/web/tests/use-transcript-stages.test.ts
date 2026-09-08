@@ -16,6 +16,12 @@ import { useTranscriptStages } from '../src/composables/useTranscriptStages';
  * only far enough to prove the buttons and textareas reach these actions
  * (issue #41). The gate, the stale propagation and the clearing are pinned
  * here, at the interface.
+ *
+ * Since issue #46 the display state each pane reports is a single
+ * `PaneStatus` computed — `rawStatus`, `reflowedStatus`, `cleanedStatus` —
+ * that collapses the machine state under `locked > stale > current > none`.
+ * The cases below read those instead of the four booleans they replaced
+ * (`reflowedLocked` / `cleanedLocked` / `reflowedStale` / `cleanedStale`).
  */
 
 const ALL_RULES: readonly RuleId[] = presetById(DEFAULT_PRESET_ID).ruleIds;
@@ -82,7 +88,7 @@ describe('the gate', () => {
 
     expect(s.reflowed.value).toBe('');
     expect(s.canRunLevel2.value).toBe(false);
-    expect(s.reflowedLocked.value).toBe(true);
+    expect(s.reflowedStatus.value).toBe('locked');
   });
 
   it('makes a direct runLevel2 call inert until level 1 has run', () => {
@@ -92,16 +98,16 @@ describe('the gate', () => {
     s.runLevel2(ALL_RULES);
 
     expect(s.cleaned.value).toBe('');
-    expect(s.cleanedLocked.value).toBe(true);
+    expect(s.cleanedStatus.value).toBe('locked');
   });
 
   it('locks the reflowed pane until level 1 runs', () => {
     const s = useTranscriptStages();
     s.editRaw(RAW);
-    expect(s.reflowedLocked.value).toBe(true);
+    expect(s.reflowedStatus.value).toBe('locked');
 
     s.runLevel1();
-    expect(s.reflowedLocked.value).toBe(false);
+    expect(s.reflowedStatus.value).toBe('current');
   });
 
   it('locks the cleaned pane until level 2 produces text', () => {
@@ -110,10 +116,10 @@ describe('the gate', () => {
     const s = useTranscriptStages();
     s.editRaw(RAW);
     s.runLevel1();
-    expect(s.cleanedLocked.value).toBe(true);
+    expect(s.cleanedStatus.value).toBe('locked');
 
     s.runLevel2(ALL_RULES);
-    expect(s.cleanedLocked.value).toBe(false);
+    expect(s.cleanedStatus.value).toBe('current');
   });
 });
 
@@ -188,7 +194,7 @@ describe('stale propagation', () => {
 
     s.editRaw(`${RAW}\nA later thought.`);
 
-    expect(s.reflowedStale.value).toBe(true);
+    expect(s.reflowedStatus.value).toBe('stale');
   });
 
   it('keeps the reflowed text while it is stale', () => {
@@ -210,8 +216,8 @@ describe('stale propagation', () => {
 
     s.editRaw(`${RAW}\nA later thought.`);
 
-    expect(s.reflowedStale.value).toBe(false);
-    expect(s.reflowedLocked.value).toBe(true);
+    // `locked` wins: a stage that has never run is not stale.
+    expect(s.reflowedStatus.value).toBe('locked');
   });
 
   it('marks both downstream panes stale on one raw edit', () => {
@@ -224,8 +230,8 @@ describe('stale propagation', () => {
 
     s.editRaw(`${RAW}\nA later thought.`);
 
-    expect(s.reflowedStale.value).toBe(true);
-    expect(s.cleanedStale.value).toBe(true);
+    expect(s.reflowedStatus.value).toBe('stale');
+    expect(s.cleanedStatus.value).toBe('stale');
     expect(s.cleaned.value).toBe(CLEANED);
   });
 
@@ -238,7 +244,7 @@ describe('stale propagation', () => {
 
     s.editReflowed('A hand-repaired paragraph.');
 
-    expect(s.cleanedStale.value).toBe(true);
+    expect(s.cleanedStatus.value).toBe('stale');
   });
 
   it('marks the cleaned pane stale when level 1 is re-run', () => {
@@ -249,7 +255,7 @@ describe('stale propagation', () => {
 
     s.runLevel1();
 
-    expect(s.cleanedStale.value).toBe(true);
+    expect(s.cleanedStatus.value).toBe('stale');
   });
 
   it('marks the cleaned pane stale on demand, for a rule-set change the caller owns', () => {
@@ -262,7 +268,7 @@ describe('stale propagation', () => {
 
     s.markCleanedStale();
 
-    expect(s.cleanedStale.value).toBe(true);
+    expect(s.cleanedStatus.value).toBe('stale');
   });
 
   it('leaves an empty cleaned pane locked rather than stale', () => {
@@ -275,8 +281,7 @@ describe('stale propagation', () => {
     s.editReflowed('A replacement paragraph.');
     s.markCleanedStale();
 
-    expect(s.cleanedStale.value).toBe(false);
-    expect(s.cleanedLocked.value).toBe(true);
+    expect(s.cleanedStatus.value).toBe('locked');
   });
 });
 
@@ -289,7 +294,7 @@ describe('clearing stale', () => {
 
     s.runLevel1();
 
-    expect(s.reflowedStale.value).toBe(false);
+    expect(s.reflowedStatus.value).toBe('current');
   });
 
   it('clears the cleaned stale flag when level 2 is re-run', () => {
@@ -301,7 +306,7 @@ describe('clearing stale', () => {
 
     s.runLevel2(ALL_RULES);
 
-    expect(s.cleanedStale.value).toBe(false);
+    expect(s.cleanedStatus.value).toBe('current');
   });
 
   it('does not clear the cleaned stale flag when only level 1 is re-run', () => {
@@ -314,7 +319,67 @@ describe('clearing stale', () => {
 
     s.runLevel1();
 
-    expect(s.reflowedStale.value).toBe(false);
-    expect(s.cleanedStale.value).toBe(true);
+    expect(s.reflowedStatus.value).toBe('current');
+    expect(s.cleanedStatus.value).toBe('stale');
+  });
+});
+
+describe('the pane statuses', () => {
+  it('moves the raw pane from `none` to `current` when it gets text', () => {
+    // The raw pane's whole status range: `none` while blank, `current` once
+    // it holds something to reflow (#43 Q11).
+    const s = useTranscriptStages();
+    expect(s.rawStatus.value).toBe('none');
+
+    s.editRaw(RAW);
+    expect(s.rawStatus.value).toBe('current');
+  });
+
+  it('leaves the raw pane `none` for whitespace alone', () => {
+    // Same trim gate as `canRunLevel1`: newlines are not content to reflow.
+    const s = useTranscriptStages();
+    s.editRaw('  \n\n  ');
+
+    expect(s.rawStatus.value).toBe('none');
+  });
+
+  it('reports `none` for a reflowed pane emptied by hand after a run', () => {
+    // The value the four booleans could not name: level 1 has run, so the
+    // pane is not locked; nothing upstream changed, so it is not stale; it is
+    // blank, and that is the user's own deletion, not an error.
+    const s = useTranscriptStages();
+    s.editRaw(RAW);
+    s.runLevel1();
+
+    s.editReflowed('');
+
+    expect(s.reflowedStatus.value).toBe('none');
+  });
+
+  it('ranks `stale` over `none` for a reflowed pane emptied while stale', () => {
+    // The other side of the emptied-pane case: once the raw pane has changed
+    // under it, an emptied reflowed pane still asks to be re-run rather than
+    // falling back to `none`. `stale` is checked before emptiness.
+    const s = useTranscriptStages();
+    s.editRaw(RAW);
+    s.runLevel1();
+    s.editRaw(`${RAW}\nA later thought.`);
+
+    s.editReflowed('');
+
+    expect(s.reflowedStatus.value).toBe('stale');
+  });
+
+  it('ranks `stale` over `current` while the reflowed pane still holds text', () => {
+    // Both conditions hold — the pane has a value *and* the raw pane changed
+    // under it — and `stale` wins, so the reader is told the text is old.
+    const s = useTranscriptStages();
+    s.editRaw(RAW);
+    s.runLevel1();
+
+    s.editRaw(`${RAW}\nA later thought.`);
+
+    expect(s.reflowed.value).toBe(REFLOWED);
+    expect(s.reflowedStatus.value).toBe('stale');
   });
 });
