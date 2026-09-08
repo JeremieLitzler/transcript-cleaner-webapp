@@ -8,30 +8,36 @@ One line. Take more only when the reason genuinely needs it.
 
 Before adding a comment, read how the surrounding file comments and match that rate.
 
+**Good** — the comment names something you can't recover from the code:
+
 ```ts
 // Level 2 only ever sees level-1 output; the ordering is guaranteed upstream, so no re-check here.
 const cleaned = applyRules(reflowed)
 ```
+
+**Bad** — the comment restates the line:
 
 ```ts
 // apply the rules to the reflowed transcript
 const cleaned = applyRules(reflowed)
 ```
 
-The first names something you can't recover from the code. The second restates the line.
+The same test on one visible line:
 
-Another pair, the same line both times:
+**Good:**
 
 ```ts
 // Keep the trailing newline — the goldens carry one and the fixture diff is byte-exact.
 return output + '\n'
 ```
 
+**Bad:**
+
 ```ts
 // append a newline to the output
 return output + '\n'
 ```
 
-Drop the `+ '\n'` and the golden tests break. The first comment tells you that; the second re-says the code.
+Drop the `+ '\n'` and the golden tests break: the Good comment tells you that, the Bad one just re-says the code.
 
 **Review bar:** every comment on a changed line names a why, a constraint, or a caveat that the code beneath it does not already show.
