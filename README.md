@@ -49,7 +49,7 @@ In dev the app imports `packages/rules` **from source**, so a change to a rule r
 
 ## Branches, CI and releases
 
-One long-lived branch: **`develop`**. Every pull request — feature, fix, Dependabot — targets it, and it is what deploys. A release is cut by pushing a `release/<date>` branch off `develop`, not by a pull request (issue #54; the old `develop` > `main` release PR is gone, and `main` itself is being retired in #60).
+One long-lived branch: **`develop`** — the default branch and what deploys. Every pull request — feature, fix, Dependabot — targets it. A release is cut by pushing a `release/<date>` branch off `develop`, not by a pull request (issues #54, #60; the old `develop` > `main` release PR and the `main` branch itself are gone).
 
 ```mermaid
 flowchart LR
