@@ -1,14 +1,10 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue';
-import {
-  DEFAULT_PRESET_ID,
-  LEVEL_2_PIPELINE,
-  presetById,
-  type RuleId,
-} from '@transcript-cleaner/rules';
+import { ref } from 'vue';
+import { LEVEL_2_PIPELINE, type RuleId } from '@transcript-cleaner/rules';
 import TranscriptPane from './components/TranscriptPane.vue';
 import RulesDrawer from './components/RulesDrawer.vue';
 import { useTranscriptStages } from './composables/useTranscriptStages';
+import { useRuleSelection } from './composables/useRuleSelection';
 
 /**
  * Q16 variant C: a toolbar chip that opens a rules drawer, and the three
@@ -17,8 +13,11 @@ import { useTranscriptStages } from './composables/useTranscriptStages';
  * configuration is somewhere you visit.
  *
  * The look comes from `docs/prototypes/q16-preset-rules.prototype.html`. The
- * three-stage machine underneath it is `useTranscriptStages` (issue #40); this
- * component keeps only the rule selection, the drawer, and the wiring.
+ * three-stage machine underneath it is `useTranscriptStages` (issue #40); the
+ * preset and per-rule state is `useRuleSelection` (issue #44); this component
+ * holds no array logic of its own — only the drawer and the wiring between
+ * the two composables, which is why `pickPreset` / `toggleRule` below also
+ * call `markCleanedStale`.
  *
  * Still to come, each its own piece of work: the `.txt` drop (Q25), copy and
  * download (Q6), and the per-rule fire counts the prototype showed (issue #8).
@@ -40,22 +39,19 @@ const {
   markCleanedStale,
 } = useTranscriptStages();
 
-const presetId = ref(DEFAULT_PRESET_ID);
-const enabledRuleIds = ref<RuleId[]>([...presetById(DEFAULT_PRESET_ID).ruleIds]);
+const ruleSelection = useRuleSelection();
+const { presetId, preset, enabledRuleIds, enabledCount, isEnabled } =
+  ruleSelection;
+
 const drawerOpen = ref(false);
 
-const preset = computed(() => presetById(presetId.value));
-
 function pickPreset(id: string) {
-  presetId.value = id;
-  enabledRuleIds.value = [...presetById(id).ruleIds];
+  ruleSelection.pickPreset(id);
   markCleanedStale();
 }
 
 function toggleRule(id: RuleId) {
-  enabledRuleIds.value = enabledRuleIds.value.includes(id)
-    ? enabledRuleIds.value.filter((ruleId) => ruleId !== id)
-    : [...enabledRuleIds.value, id];
+  ruleSelection.toggleRule(id);
   markCleanedStale();
 }
 </script>
@@ -88,7 +84,7 @@ function toggleRule(id: RuleId) {
       <button class="chip" @click="drawerOpen = true">
         <b>{{ preset.name }}</b>
         <span class="text-muted [font-variant-numeric:tabular-nums]">
-          {{ enabledRuleIds.length }}/{{ LEVEL_2_PIPELINE.length }} rules
+          {{ enabledCount }}/{{ LEVEL_2_PIPELINE.length }} rules
         </span>
         <span class="text-muted">▸</span>
       </button>
@@ -137,10 +133,11 @@ function toggleRule(id: RuleId) {
     <RulesDrawer
       v-if="drawerOpen"
       :preset-id="presetId"
-      :enabled-rule-ids="enabledRuleIds"
+      :is-enabled="isEnabled"
+      :enabled-count="enabledCount"
       @close="drawerOpen = false"
       @pick-preset="pickPreset"
-      @toggle-rule="toggleRule"
+      @toggle="toggleRule"
     />
   </div>
 </template>
