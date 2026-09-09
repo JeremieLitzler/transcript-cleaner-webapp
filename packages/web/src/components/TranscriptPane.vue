@@ -13,8 +13,8 @@ import type { PaneStatus } from '../composables/useTranscriptStages';
  *
  * This component derives no state of its own: `status` is handed to it already
  * ranked by `useTranscriptStages`, and the badge, the dimmed background and the
- * locked look all follow from it. `modelValue` is the textarea's content
- * binding and nothing else.
+ * locked look all follow from it. The `defineModel` ref is the textarea's
+ * content binding and nothing else.
  */
 const props = defineProps<{
   title: string;
@@ -24,7 +24,6 @@ const props = defineProps<{
    * text supplies the `sub` slot instead.
    */
   sub?: string;
-  modelValue: string;
   readonly?: boolean;
   /**
    * The pane's whole display state, ranked in `useTranscriptStages` under
@@ -35,7 +34,11 @@ const props = defineProps<{
   placeholder?: string;
 }>();
 
-defineEmits<{ 'update:modelValue': [value: string] }>();
+/**
+ * The textarea's content, two-way bound. `defineModel` still emits
+ * `update:modelValue`, so every current consumer's binding keeps working.
+ */
+const model = defineModel<string>({ required: true });
 
 /**
  * The subtitle is a slot so a pane can put a link in it. Filling the slot
@@ -86,14 +89,11 @@ const badge = computed(() => BADGE_BY_STATUS[props.status]);
         status === 'stale' ? 'bg-[#fbfaf5] text-[#8b8b84]' : 'bg-transparent',
         status === 'locked' ? 'bg-[#f4f4f0]' : '',
       ]"
-      :value="modelValue"
+      v-model="model"
       :readonly="readonly"
       :aria-label="title"
       :placeholder="placeholder"
       spellcheck="false"
-      @input="
-        $emit('update:modelValue', ($event.target as HTMLTextAreaElement).value)
-      "
     ></textarea>
   </section>
 </template>
