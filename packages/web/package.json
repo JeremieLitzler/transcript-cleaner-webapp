@@ -20,7 +20,7 @@
     "@tailwindcss/vite": "^4.1.16",
     "@vitejs/plugin-vue": "^6.0.1",
     "@vue/test-utils": "^2.5.0",
-    "happy-dom": "^20.13.2",
+    "happy-dom": "^20.14.0",
     "tailwindcss": "^4.1.16",
     "vite": "^8.2.2",
     "vitest": "^3.2.4",
