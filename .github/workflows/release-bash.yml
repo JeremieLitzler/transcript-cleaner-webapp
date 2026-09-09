@@ -13,8 +13,9 @@ run-name: >-
 #   - a release is cut by branching `release/<date>` off `develop` and pushing
 #     it — that runs the real publish (tag + GitHub release) on that ref;
 #   - `workflow_dispatch` runs from the Actions tab against a chosen branch:
-#     `mode=preview` (the default) dry-runs, `mode=publish` cuts the release —
-#     but only from `develop` or a `release/*` branch, never a feature branch.
+#     `mode=publish` cuts the release and is refused from anything but `develop`
+#     or a `release/*` branch; `mode=preview` (the default) only dry-runs, and
+#     is allowed from any branch since it writes nothing.
 # There is no target branch and no `develop` > `main` pull request any more.
 #
 # Note: GitHub only exposes `workflow_dispatch` once this file is on the repo's
