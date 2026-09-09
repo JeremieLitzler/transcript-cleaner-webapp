@@ -91,7 +91,9 @@ jobs:
           {
             echo "## Release preview"
             echo
-            if [[ -s release-notes.md ]]; then
+            if [[ -f release-output.log ]] && grep -q "no commit to release in range" release-output.log; then
+              echo "No releasable commits since the last tag — nothing to release yet."
+            elif [[ -s release-notes.md ]]; then
               echo "The next release would carry these notes:"
               echo
               cat release-notes.md
@@ -124,42 +126,41 @@ jobs:
     environment:
       name: CI
     permissions:
-      contents: read
+      # release.sh pushes the new tag and creates the GitHub release. Under the
+      # single trunk nothing protects tags (no tag ruleset, no classic tag
+      # protection) and no workflow triggers on `push: tags` or `release`, so the
+      # default GITHUB_TOKEN with write access is enough — the GitHub App token
+      # this job used to mint is gone (issue #56). The unused GH_APP_ID /
+      # GH_APP_KEY repo secrets can now be deleted.
+      #
+      # Trade-off: a tag or release created with GITHUB_TOKEN does not trigger
+      # further workflows. If one is ever added (`on: release`, `on: push: tags`
+      # — npm publish, deploy, changelog sync), restore an App or PAT token here.
+      contents: write
+      # release.sh step 2 resolves issue references to titles via the issues
+      # endpoint, in publish mode too — same as the preview job.
+      issues: read
+      pull-requests: read
     concurrency:
       # One publish at a time, and never cancel one in flight.
       group: release-publish
       cancel-in-progress: false
     steps:
-      # release.sh pushes the new tag. A GitHub App token is used rather than the
-      # default GITHUB_TOKEN, which historically could not push to the protected
-      # release branch and still cannot trigger downstream tag workflows. Whether
-      # the default token now suffices under the single-trunk model is issue #56.
-      - name: Generate a token for pushing the tag
-        id: app-token
-        uses: actions/create-github-app-token@v3
-        with:
-          app-id: ${{ secrets.GH_APP_ID }}
-          private-key: ${{ secrets.GH_APP_KEY }}
-
       - name: Check out ${{ github.ref_name }}
         uses: actions/checkout@v7
         with:
           fetch-depth: 0
-          token: ${{ steps.app-token.outputs.token }}
           persist-credentials: true
 
-      - name: Configure git identity for the app
-        env:
-          APP_ID: ${{ secrets.GH_APP_ID }}
-          APP_SLUG: ${{ steps.app-token.outputs.app-slug }}
+      - name: Configure git identity
         run: |
-          git config user.name "${APP_SLUG}[bot]"
-          git config user.email "${APP_ID}+${APP_SLUG}[bot]@users.noreply.github.com"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
 
       - name: Publish the release
         shell: bash
         env:
-          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           set +e
           bash scripts/release/release.sh --yes 2>&1 | tee release-output.log
