@@ -23,9 +23,6 @@ run-name: >-
 # earlier run left an orphaned tag on the remote (pushed, but no release) it
 # deletes that tag so a re-push re-cuts the release cleanly instead of dying.
 #
-# Note: GitHub only exposes `workflow_dispatch` once this file is on the repo's
-# default branch (see issue #60). Until then, use the `release/*` push path.
-#
 # `release.sh`'s `gate()` prompts abort in any non-TTY environment, so every CI
 # run — preview or publish — passes `--yes`. `--dry-run` only skips the
 # destructive remote steps (tag push, release publish); it does not skip the
