@@ -24,3 +24,9 @@ See `docs/agents/domain.md`.
 
 Comments carry the *why*, not the *what*; one line; match the file's rate.
 See `docs/agents/coding-standards.md`.
+
+### CI and releases
+
+`release.sh` is vendored — pipeline changes wrap it in `release-bash.yml`.
+Releases are cut by pushing a `release/<date>` branch, not a PR.
+See `docs/agents/ci.md`.
