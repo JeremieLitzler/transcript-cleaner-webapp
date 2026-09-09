@@ -49,13 +49,22 @@ In dev the app imports `packages/rules` **from source**, so a change to a rule r
 
 ## Branches, CI and releases
 
-Two branches: **`develop`** takes the day-to-day work, **`main`** is what has been released. Open pull requests against `develop`; `main` only ever receives a pull request from `develop`.
+One long-lived branch: **`develop`**. Every pull request — feature, fix, Dependabot — targets it, and it is what deploys. A release is cut by pushing a `release/<date>` branch off `develop`, not by a pull request (issue #54; the old `develop` > `main` release PR is gone, and `main` itself is being retired in #60).
 
-Every pull request into either branch runs [`pr-build.yml`](.github/workflows/pr-build.yml): `npm ci`, `npm audit signatures`, `npm run check`, `npm run build`. It runs `check` rather than `test` because `npm run build` only typechecks `packages/web` — `packages/rules` has no build step, so its `tsc --noEmit` would otherwise never run in CI. Running `npm run check` locally before pushing therefore reproduces the whole gate.
+```mermaid
+flowchart LR
+  PR["feature / fix PR"] -->|rebase-merge| dev["develop"]
+  dev -->|every push| prev["preview: release.sh --dry-run"]
+  dev -.->|"branch off, push"| rel["release/DATE"]
+  rel -->|push| pub["publish: release.sh --yes"]
+  pub --> out["tag vX.Y.Z + GitHub release"]
+```
 
-Releases come from conventional commits, read by the vendored [`scripts/release/release.sh`](scripts/release/release.sh). Opening the `develop` > `main` pull request previews the version and notes that merging would produce; merging it tags and publishes the GitHub release. So commit subjects matter: `feat:` bumps the minor, `fix:` the patch, a `!` or a `BREAKING CHANGE:` footer the major, and anything else rides along without moving the number.
+Every pull request into `develop` runs [`pr-build.yml`](.github/workflows/pr-build.yml): `npm ci`, `npm audit signatures`, `npm run check`, `npm run build`. It runs `check` rather than `test` because `npm run build` only typechecks `packages/web` — `packages/rules` has no build step, so its `tsc --noEmit` would otherwise never run in CI. Running `npm run check` locally before pushing therefore reproduces the whole gate.
 
-Deploy is Netlify's own Git integration rather than a workflow — [`netlify.toml`](netlify.toml) holds the build contract, Netlify holds the trigger, which is what gives a deploy preview per pull request. Publishing a release needs a GitHub App and two secrets that are **not yet provisioned**; the checklist is in [`scripts/release/VENDORED.md`](scripts/release/VENDORED.md).
+Releases come from conventional commits, read by the vendored [`scripts/release/release.sh`](scripts/release/release.sh). Every push to `develop` runs [`release-bash.yml`](.github/workflows/release-bash.yml) in preview — a dry run that writes the version and notes a release would produce to the run summary. Pushing a `release/<date>` branch runs it for real: it tags that commit and publishes the GitHub release. Because the branch carries `develop`'s commits unchanged, the tag lands on a commit `develop` already has, so `git describe` on `develop` always sees the latest release. Commit subjects matter: `feat:` bumps the minor, `fix:` the patch, a `!` or a `BREAKING CHANGE:` footer the major, and anything else rides along without moving the number.
+
+Deploy is Netlify's own Git integration rather than a workflow — [`netlify.toml`](netlify.toml) holds the build contract, Netlify holds the trigger, which is what gives a deploy preview per pull request.
 
 Dependabot opens weekly pull requests against `develop` for both the npm workspace and the action pins in `.github/workflows/`.
 
