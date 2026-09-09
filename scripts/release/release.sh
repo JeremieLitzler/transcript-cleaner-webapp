@@ -131,7 +131,13 @@ REPO=$(gh repo view --json nameWithOwner --jq .nameWithOwner) \
 REPO_URL="https://github.com/${REPO}"
 
 CURRENT_BRANCH=$(git rev-parse --abbrev-ref HEAD)
-[[ $CURRENT_BRANCH == "main" ]] || warn "you are on '${CURRENT_BRANCH}', not 'main'"
+# The release runs from the trunk (`develop`) or a `release/*` branch cut off it.
+# `HEAD` covers a detached checkout (running against a specific commit rather
+# than a branch tip). Anything else is probably a mistake worth a word.
+case "$CURRENT_BRANCH" in
+  develop | release/* | HEAD) ;;
+  *) warn "you are on '${CURRENT_BRANCH}', not 'develop' or a 'release/*' branch" ;;
+esac
 
 [[ -n $TO_REF ]] || TO_REF="HEAD"
 git rev-parse --verify --quiet "$TO_REF" >/dev/null || die "unknown ref: $TO_REF"
