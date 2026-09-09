@@ -22,6 +22,10 @@ run-name: >-
 # it refuses a `release/*` ref that `develop` does not contain, and if an
 # earlier run left an orphaned tag on the remote (pushed, but no release) it
 # deletes that tag so a re-push re-cuts the release cleanly instead of dying.
+# After a push-triggered publish succeeds it deletes the triggering `release/*`
+# branch from `origin` (issue #72) — a disposable trigger ref with nothing to
+# merge back — so those refs do not accumulate and a later push to a stale one
+# cannot re-fire a publish. A `workflow_dispatch` publish never deletes its ref.
 #
 # `release.sh`'s `gate()` prompts abort in any non-TTY environment, so every CI
 # run — preview or publish — passes `--yes`. `--dry-run` only skips the
@@ -119,10 +123,17 @@ jobs:
     name: Publish release
     # A pushed `release/*` branch, or a manual dispatch with mode=publish from
     # `develop` or a `release/*` branch: cut the release.
+    #
+    # `github.event.deleted != true` drops the `push` event GitHub fires when a
+    # `release/*` branch is deleted — otherwise the job starts on an all-zero
+    # `github.sha` and the checkout dies. The pipeline's own delete step pushes
+    # with GITHUB_TOKEN, which starts no workflow (#56), so this only bites a
+    # manual deletion.
     if: >-
-      (github.event_name == 'push' && startsWith(github.ref, 'refs/heads/release/')) ||
+      github.event.deleted != true &&
+      ((github.event_name == 'push' && startsWith(github.ref, 'refs/heads/release/')) ||
       (github.event_name == 'workflow_dispatch' && inputs.mode == 'publish' &&
-      (github.ref == 'refs/heads/develop' || startsWith(github.ref, 'refs/heads/release/')))
+      (github.ref == 'refs/heads/develop' || startsWith(github.ref, 'refs/heads/release/'))))
     runs-on: ubuntu-latest
     # A named environment so the release step has somewhere to hang required
     # reviewers or a wait timer later, without editing this file.
@@ -218,3 +229,24 @@ jobs:
             exit 0
           fi
           exit "$script_exit_code"
+
+      - name: Delete the published release branch
+        # #72: once the tag and release exist the `release/<date>` branch is
+        # spent — nothing merges back, the #64 check having already gated it on
+        # `develop`; the file header carries the why. The guards keep it to a
+        # real publish: `success()` drops a hard failure, the `push` check
+        # spares a `workflow_dispatch` publish (which may sit on `develop`), and
+        # the `v*`-tag-on-HEAD test drops a no-op run where "Publish the
+        # release" exited 0 without tagging. The publish checkout persists
+        # GITHUB_TOKEN, so `git push` is authenticated; `|| echo` absorbs a
+        # branch that is already gone.
+        if: success() && github.event_name == 'push' && startsWith(github.ref, 'refs/heads/release/')
+        shell: bash
+        run: |
+          branch="${GITHUB_REF#refs/heads/}"
+          if [[ -z "$(git tag --points-at HEAD --list 'v[0-9]*.[0-9]*.[0-9]*')" ]]; then
+            echo "No v* tag on HEAD — nothing was published; leaving $branch for a retry."
+            exit 0
+          fi
+          git push origin --delete "$branch" \
+            || echo "Branch $branch was already absent from origin — nothing to delete."

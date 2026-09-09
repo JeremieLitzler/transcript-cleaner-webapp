@@ -12,6 +12,8 @@ The publish job already wraps the script with two preflight guards (issues #63, 
 
 A release is cut by pushing a `release/<date>` branch off the tip of `develop` — not by a pull request, and not from `develop` itself (a push to `develop` only ever runs the dry-run preview to the run summary). The `release/*` push runs the `publish` job, which tags that commit and creates the GitHub release. A `workflow_dispatch` run with `mode=publish` does the same from `develop` or a `release/*` branch.
 
+The release branch is disposable: it carries nothing to merge back, and once the `publish` job has tagged and released, its final step deletes the `release/*` branch from `origin`. Cut a fresh `release/<date>` for the next release rather than reusing one. A `workflow_dispatch` publish never deletes its ref, and a failed publish leaves the branch in place for a retry.
+
 ## GITHUB_TOKEN and downstream workflows
 
 The publish job tags and releases with the default `GITHUB_TOKEN`, which by design does not trigger further workflow runs. Before adding a workflow that keys on `on: release` or `on: push: tags` (npm publish, a deploy, changelog sync), read the `permissions:` comment in `release-bash.yml`'s publish job — it needs a GitHub App or PAT token restored for the release to be visible to that workflow.
