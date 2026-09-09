@@ -11,10 +11,10 @@ updates:
   # single root `package-lock.json`, so this covers `packages/rules` and
   # `packages/web` too.
   #
-  # `target-branch` is spelled out rather than left to the default branch: a
-  # dependency bump is day-to-day work, and day-to-day work lands on `develop`
-  # (issue #13). Opening these against `main` would push them straight at the
-  # release branch.
+  # `target-branch` is kept explicit even though `develop` is now the default
+  # branch: dependency bumps are day-to-day work and belong on `develop`, and
+  # spelling it out means a later default-branch change can't silently
+  # redirect them (issue #13, issue #60).
   - package-ecosystem: 'npm'
     directory: '/'
     target-branch: 'develop'
