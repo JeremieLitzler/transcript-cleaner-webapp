@@ -23,25 +23,9 @@ This repo has no `main`, so that is replaced with a `case` that accepts `develop
 
 `git`, `bash` 4 or newer, and the GitHub CLI already authenticated — all present on `ubuntu-latest`. It resolves the repository itself via `gh repo view`, so nothing in it is specific to any one project.
 
-The script's `gate()` prompts call `die` in any environment with no TTY, so **both** CI modes pass `--yes`. `--dry-run` skips the destructive remote steps (tag push, release publish) but not the gates, which is why `--yes` is needed even in preview.
+## How CI runs it
 
-## What this repository wires around it
-
-`release-bash.yml` runs the script in two unattended (`--yes`) modes on a single `develop` trunk:
-
-1. **Preview** — every push to `develop`. `release.sh --dry-run` on the default `GITHUB_TOKEN`; pushes nothing, writes the pending version and notes to the run summary.
-2. **Publish** — a pushed `release/<date>` branch (or a `workflow_dispatch` with `mode=publish`). `release.sh --yes` on the same `GITHUB_TOKEN` with `contents: write`: it tags the branch's commit and creates the GitHub release.
-
-The publish job wraps the script with two guards the script itself does not carry (issues #63, #64):
-
-- It fails unless the checked-out ref is contained in `origin/develop`, so a commit added on `release/<date>` before the push cannot land the tag on a commit `develop` lacks (#64).
-- Before running the script it looks for an annotated `vX.Y.Z` tag sitting on `HEAD` that is on the remote but has no GitHub release — the state an earlier run leaves when it dies between `git push <tag>` and `gh release create`. It deletes that tag (remote and local) so the normal run below re-cuts and re-publishes it with the same notes, instead of the script dying on the re-push (either `no commit to release in range`, the tag now being on `HEAD`, or `tag <v> already exists locally`). #63 lists deleting the tag as an accepted manual recovery; this only automates it, and only for the plain re-push where the orphaned tag is on `HEAD` — a re-cut `release/<date>` with new commits past the orphaned tag is still a manual fix.
-
-No GitHub App, no extra secrets. The `protect-main` ruleset is deleted and nothing protects the tag ref (issues #54–#57), so the plain token is enough. If a workflow that triggers on `push: tags` or `release` is ever added, a token that can trigger further workflows — a GitHub App or a PAT — has to come back for the publish job, because `GITHUB_TOKEN` deliberately cannot.
-
-## The first release
-
-With no tags, `release.sh` read the entire history as its range and started from `0.0.0`; the `feat:` commits made the first release **`v0.1.0`**. Nothing needed seeding.
+`release-bash.yml` runs it `--yes` in two modes — a dry-run **preview** on every push to `develop`, a **publish** on a pushed `release/<date>` branch — both on the default `GITHUB_TOKEN`, and the publish job adds two preflight guards the script does not carry (issues #63, #64). The wiring, the guards, and why the plain token suffices are in `release-bash.yml` and `docs/agents/ci.md`.
 
 ## Syncing a deliberate update
 
