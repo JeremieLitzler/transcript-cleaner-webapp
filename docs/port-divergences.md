@@ -169,11 +169,13 @@ Match exactly the ellipsis and apply **before** period rule?
 
 Recorded to close an open assumption from Q3b. Level 1 was tested against French input and behaves identically to English: `.` ends a paragraph, everything else is glued. There is no character class, locale, pronoun list or word list anywhere in the script. French exposes no gap that English does not already expose — L1-01 through L1-03 are the whole list, and all three are language-neutral.
 
-### L1-05 — the raw transcripts are CRLF, and the port must normalise them — _new, found while verifying the golden pair_
+### L1-05 — the raw transcripts are CRLF, and the port must normalise them — _new, found while verifying the golden pair; resolved at the line-split_
 
 Every file in `packages/rules/tests/golden-transcripts/` ends its lines with `\r\n`. Python hides this twice over: `str.splitlines()` splits on `\r\n` and drops it, `str.strip()` would remove a stray `\r` anyway, and `Path.write_text` re-inserts `\r\n` on Windows. None of that is true in a browser. A TypeScript port that splits on `"\n"` will carry a trailing `\r` into every paragraph, which then defeats `endsWith(".")` on _every single line_ — level 1 would produce one enormous paragraph.
 
 The port must normalise `\r\n` and bare `\r` to `\n` before splitting. This is not a divergence from the Python; it is a divergence the port will introduce if nobody writes it down.
+
+**Resolved in phase 1.** `formatLevel1` splits with `pySplitLines`, whose boundary set already covers `\r\n` and bare `\r` (L1-07), so callers pass raw transcript straight in and level 1 needs no separate normalisation pass.
 
 ### L1-06 — trailing-newline convention — _settled during the phase-1 port_
 
