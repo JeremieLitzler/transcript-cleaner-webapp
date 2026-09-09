@@ -8,14 +8,13 @@
 # names as the command to run before pushing.
 name: PR Test & Build Check
 
-# Both branches of the pair (issue #13): day-to-day pull requests target
-# `develop`, and the release pull request targets `main`. Checking only one of
-# them would leave whichever it is not unguarded.
+# `develop` is the only long-lived branch (issue #54): every day-to-day pull
+# request targets it, and releases are cut by pushing a `release/*` branch
+# rather than by a pull request. So this guards `develop` PRs and nothing else.
 on:
   pull_request:
     branches:
       - develop
-      - main
     types: [opened, synchronize, reopened]
 
 # Nothing here writes to the repo. Say so, rather than inheriting whatever the
