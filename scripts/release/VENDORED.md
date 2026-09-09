@@ -15,26 +15,25 @@ Verified byte-for-byte against the upstream file at that commit, and against the
 
 The script's `gate()` prompts call `die` in any environment with no TTY, so **both** CI modes pass `--yes`. `--dry-run` skips the destructive remote steps (tag push, release publish) but not the gates, which is why `--yes` is needed even in preview.
 
-## Setup this repository still needs
+## What this repository wires around it
 
-Preview mode works as-is: it runs on the default `GITHUB_TOKEN` and pushes nothing. Publish mode does not, and will fail until all of the following exist:
+`release-bash.yml` runs the script in two unattended (`--yes`) modes on a single `develop` trunk:
 
-1. **A `develop` branch**, and pull requests retargeted at it. The workflow only acts on `develop` > `main`.
-2. **A GitHub App** installed on this repository with contents write permission, and its credentials as the repository secrets `GH_APP_ID` and `GH_APP_KEY`. The default `GITHUB_TOKEN` cannot push a tag to a protected `main`.
-3. **Branch protection on `main`** — otherwise the App is solving a problem the repository does not have, and the plain token would do.
+1. **Preview** — every push to `develop`. `release.sh --dry-run` on the default `GITHUB_TOKEN`; pushes nothing, writes the pending version and notes to the run summary.
+2. **Publish** — a pushed `release/<date>` branch (or a `workflow_dispatch` with `mode=publish`). `release.sh --yes` on the same `GITHUB_TOKEN` with `contents: write`: it tags the branch's commit and creates the GitHub release.
 
-Until step 2 is done, a merge of `develop` into `main` will run the publish job and fail at the token step. That is a visible failure rather than a silent one, which is the intended shape.
+No GitHub App, no extra secrets. The `protect-main` ruleset is deleted and nothing protects the tag ref (issues #54–#57), so the plain token is enough. If a workflow that triggers on `push: tags` or `release` is ever added, a token that can trigger further workflows — a GitHub App or a PAT — has to come back for the publish job, because `GITHUB_TOKEN` deliberately cannot.
 
 ## The first release
 
-There are no tags yet, so `release.sh` reads the entire history as its range and starts from `0.0.0`. The branch carries `feat:` commits, so the first release will be **`v0.1.0`**. Nothing needs seeding.
+With no tags, `release.sh` read the entire history as its range and started from `0.0.0`; the `feat:` commits made the first release **`v0.1.0`**. Nothing needed seeding.
 
 ## Syncing a deliberate update
 
 1. Diff the upstream file at the new commit against this copy before touching anything: `gh api repos/JeremieLitzler/semantic-release-script-testing/contents/release.sh?ref=<new-commit> --jq '.content' | base64 -d`
-2. Review the diff line by line. This script runs unattended (`--yes`) against a protected branch in publish mode, so an unreviewed change is a direct risk.
+2. Review the diff line by line. This script runs unattended (`--yes`) in publish mode — it pushes a tag and creates a release — so an unreviewed change is a direct risk.
 3. Replace `release.sh` with the new content, unmodified.
 4. Update the **Pinned commit** and **Vendored on** fields above.
-5. Exercise it in preview mode on a real pull request before relying on it for a publish.
+5. Exercise it in preview mode — a push to `develop` — before relying on it for a publish.
 
 Do not track the upstream default branch automatically — no submodule, no fetch-at-CI-time. Every sync here is a deliberate, reviewed commit.
