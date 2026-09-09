@@ -4,14 +4,16 @@ import App from '../src/App.vue';
 
 /**
  * `App.vue` — the wiring between the toolbar, the rules drawer and the
- * `useTranscriptStages` composable (issues #24, #40, #41).
+ * `useTranscriptStages` / `useRuleSelection` composables (issues #24, #40,
+ * #41, #44).
  *
- * The gate, the stale propagation and the clearing are the composable's
- * behaviour and are pinned in `use-transcript-stages.test.ts`. What stays here
- * is what only a mounted `App.vue` can prove: that a button or textarea is
- * actually wired to the composable action behind it, that the rules drawer's
- * own logic works, and that the page's structure and accessibility affordances
- * are in place.
+ * The stage gate, the stale propagation and the clearing are
+ * `useTranscriptStages`'s behaviour, pinned in `use-transcript-stages.test.ts`.
+ * The preset-replace and toggle-trim behaviour is `useRuleSelection`'s, pinned
+ * in `use-rule-selection.test.ts`. What stays here is what only a mounted
+ * `App.vue` can prove: that a button, textarea or drawer click is actually
+ * wired to the composable action behind it, and that the page's structure and
+ * accessibility affordances are in place.
  *
  * Everything below goes through the rendered buttons, textareas and checkboxes
  * rather than the component's internals. A rewiring that leaves the composable
@@ -285,11 +287,17 @@ describe('the App rules drawer', () => {
   });
 });
 
-describe('the App preset choice', () => {
-  it('replaces the enabled rules with the preset it is given', async () => {
-    // Replaces rather than merges: Universal is the three language-agnostic
-    // rules, so picking it has to turn the eight English ones off.
-    const wrapper = mountApp();
+describe('the App rule selection wiring', () => {
+  // The preset-replace and toggle-trim behaviour itself — that a preset
+  // replaces rather than merges, that a toggle trims one rule and leaves the
+  // preset name, restoring a preset, toggling back on — is pinned directly
+  // against the composable in `use-rule-selection.test.ts`. What only a
+  // mounted `App.vue` can prove is that a drawer click actually reaches it,
+  // that the wiring to `markCleanedStale` holds, and that the enabled ids
+  // this produces are what `runLevel2` receives.
+
+  it('reaches the composable when a preset is picked, marks the cleaned pane stale, and changes what Apply rules produces', async () => {
+    const wrapper = await mountCleaned();
     await openDrawer(wrapper);
 
     await pickPreset(wrapper, 'Universal (any language)');
@@ -297,89 +305,23 @@ describe('the App preset choice', () => {
     expect(checkedRuleIds(wrapper).sort((a, b) => a - b)).toEqual([3, 5, 9]);
     expect(chip(wrapper).text()).toContain('Universal (any language)');
     expect(chip(wrapper).text()).toContain('3/11 rules');
-  });
-
-  it('restores the full set when the default preset is picked back', async () => {
-    const wrapper = mountApp();
-    await openDrawer(wrapper);
-    await pickPreset(wrapper, 'Universal (any language)');
-
-    await pickPreset(wrapper, 'COGE (English)');
-
-    expect(checkedRuleIds(wrapper)).toHaveLength(11);
-  });
-
-  it('marks the cleaned pane stale', async () => {
-    // `pickPreset` reaches the composable's `markCleanedStale`.
-    const wrapper = await mountCleaned();
-    await openDrawer(wrapper);
-
-    await pickPreset(wrapper, 'Universal (any language)');
-
     expect(badge(wrapper, 'Cleaned transcript')).toBe('stale — re-run');
-  });
-
-  it('changes what Apply rules produces', async () => {
-    // The assertion that proves the enabled ids reach the pipeline at all.
-    // Everything above would still pass if a preset only ever moved the chip
-    // and the checkboxes.
-    const wrapper = await mountCleaned();
-    await openDrawer(wrapper);
-    await pickPreset(wrapper, 'Universal (any language)');
 
     await button(wrapper, 'Apply rules').trigger('click');
 
     expect(paneText(wrapper, 'Cleaned transcript')).toBe(CLEANED_WITHOUT_RULE_2);
   });
-});
 
-describe('the App rule toggles', () => {
-  it('turns off the rule it is given and no other', async () => {
-    const wrapper = mountApp();
+  it('reaches the composable when a rule is toggled, marks the cleaned pane stale, and changes what Apply rules produces', async () => {
+    const wrapper = await mountCleaned();
     await openDrawer(wrapper);
 
     await toggleRule(wrapper, 2);
 
     expect(checkedRuleIds(wrapper)).not.toContain(2);
-    expect(checkedRuleIds(wrapper)).toHaveLength(10);
     expect(chip(wrapper).text()).toContain('10/11 rules');
-  });
-
-  it('turns a rule back on', async () => {
-    const wrapper = mountApp();
-    await openDrawer(wrapper);
-    await toggleRule(wrapper, 2);
-
-    await toggleRule(wrapper, 2);
-
-    expect(checkedRuleIds(wrapper)).toContain(2);
-    expect(checkedRuleIds(wrapper)).toHaveLength(11);
-  });
-
-  it('leaves the preset name alone', async () => {
-    // Unticking a rule does not move the user off the preset they started
-    // from (Q12): the preset chooses the starting set, the checkboxes trim it.
-    const wrapper = mountApp();
-    await openDrawer(wrapper);
-
-    await toggleRule(wrapper, 2);
-
     expect(chip(wrapper).text()).toContain('COGE (English)');
-  });
-
-  it('marks the cleaned pane stale', async () => {
-    const wrapper = await mountCleaned();
-    await openDrawer(wrapper);
-
-    await toggleRule(wrapper, 2);
-
     expect(badge(wrapper, 'Cleaned transcript')).toBe('stale — re-run');
-  });
-
-  it('changes what Apply rules produces', async () => {
-    const wrapper = await mountCleaned();
-    await openDrawer(wrapper);
-    await toggleRule(wrapper, 2);
 
     await button(wrapper, 'Apply rules').trigger('click');
 

@@ -18,16 +18,24 @@ import {
  *
  * The prototype also rendered a per-rule count of paragraphs touched. That is
  * deliberately absent — issue #8.
+ *
+ * Since issue #44 the drawer does no membership math of its own: it used to
+ * repeat `enabledRuleIds.includes(rule.id)` for the checkbox, the `rule-off`
+ * class and the count header, all three tests of the same underlying set.
+ * `isEnabled` and `enabledCount` are that set's answers, handed down from
+ * `useRuleSelection` — this component only renders what it is given and emits
+ * `pickPreset` / `toggle`.
  */
 defineProps<{
   presetId: string;
-  enabledRuleIds: readonly RuleId[];
+  isEnabled: (id: RuleId) => boolean;
+  enabledCount: number;
 }>();
 
 defineEmits<{
   close: [];
   pickPreset: [id: string];
-  toggleRule: [id: RuleId];
+  toggle: [id: RuleId];
 }>();
 </script>
 
@@ -72,18 +80,18 @@ defineEmits<{
 
       <div class="overflow-auto p-[14px]">
         <div class="rulehead">
-          {{ enabledRuleIds.length }} of {{ LEVEL_2_PIPELINE.length }} on
+          {{ enabledCount }} of {{ LEVEL_2_PIPELINE.length }} on
         </div>
         <label
           v-for="rule in LEVEL_2_PIPELINE"
           :key="rule.id"
           class="rule"
-          :class="{ 'rule-off': !enabledRuleIds.includes(rule.id) }"
+          :class="{ 'rule-off': !isEnabled(rule.id) }"
         >
           <input
             type="checkbox"
-            :checked="enabledRuleIds.includes(rule.id)"
-            @change="$emit('toggleRule', rule.id)"
+            :checked="isEnabled(rule.id)"
+            @change="$emit('toggle', rule.id)"
           />
           <span
             class="flex-none basis-[22px] text-muted [font-variant-numeric:tabular-nums]"

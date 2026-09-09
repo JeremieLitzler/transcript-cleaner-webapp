@@ -10,10 +10,17 @@ import RulesDrawer from '../src/components/RulesDrawer.vue';
 
 /**
  * `RulesDrawer` (issue #25). The drawer keeps no state of its own: it renders
- * `presetId` and `enabledRuleIds` and answers every click with an event. That
- * makes the whole contract observable from the outside — which preset carries
- * the active styling, which rules are ticked, and exactly what each click
- * emits — and this suite pins each half.
+ * `presetId`, `isEnabled` and `enabledCount`, and answers every click with an
+ * event. That makes the whole contract observable from the outside — which
+ * preset carries the active styling, which rules are ticked, and exactly what
+ * each click emits — and this suite pins each half.
+ *
+ * Since issue #44 the drawer performs no membership math of its own: rather
+ * than an `enabledRuleIds` array and its own repeated `.includes(rule.id)`,
+ * it is handed `isEnabled` — the predicate `useRuleSelection` owns — and
+ * `enabledCount`, the number the count header reads directly. `isEnabledFrom`
+ * below builds that predicate for a fixture set of ids, the same shape
+ * `useRuleSelection.isEnabled` has in the real app.
  *
  * As elsewhere in the web suite, the assertions name classes rather than
  * computed styles: the web package's Vitest config leaves Tailwind out
@@ -32,11 +39,17 @@ const ALL_RULE_IDS: readonly RuleId[] = LEVEL_2_PIPELINE.map((rule) => rule.id);
  */
 const SOME_RULE_IDS: readonly RuleId[] = [3, 5, 9];
 
+/** Builds the `isEnabled` predicate for a fixture set of enabled ids. */
+function isEnabledFrom(ids: readonly RuleId[]): (id: RuleId) => boolean {
+  return (id) => ids.includes(id);
+}
+
 function mountDrawer(props: Partial<Props> = {}) {
   return mount(RulesDrawer, {
     props: {
       presetId: DEFAULT_PRESET_ID,
-      enabledRuleIds: ALL_RULE_IDS,
+      isEnabled: isEnabledFrom(ALL_RULE_IDS),
+      enabledCount: ALL_RULE_IDS.length,
       ...props,
     },
   });
@@ -189,8 +202,8 @@ describe('the RulesDrawer rule list', () => {
     });
   });
 
-  it('ticks the rules in `enabledRuleIds` and greys the rest', () => {
-    const wrapper = mountDrawer({ enabledRuleIds: SOME_RULE_IDS });
+  it('ticks the rules `isEnabled` reports on and greys the rest', () => {
+    const wrapper = mountDrawer({ isEnabled: isEnabledFrom(SOME_RULE_IDS) });
 
     for (const rule of LEVEL_2_PIPELINE) {
       const row = ruleRow(wrapper, rule.id);
@@ -203,7 +216,7 @@ describe('the RulesDrawer rule list', () => {
     }
   });
 
-  it('emits `toggleRule` with the id of whichever rule row is toggled, and nothing else', async () => {
+  it('emits `toggle` with the id of whichever rule row is toggled, and nothing else', async () => {
     // Every row has to carry its own id into the event, so a template that
     // closed over the loop variable wrong would surface here — not only for
     // one hand-picked rule.
@@ -212,22 +225,25 @@ describe('the RulesDrawer rule list', () => {
 
       await ruleCheckbox(wrapper, rule.id).setValue(false);
 
-      expect(wrapper.emitted('toggleRule')).toEqual([[rule.id]]);
+      expect(wrapper.emitted('toggle')).toEqual([[rule.id]]);
     }
   });
 });
 
 describe('the RulesDrawer rule-count header', () => {
-  it('reads "N of M on" off the enabled count and the pipeline length', () => {
+  it('reads "N of M on" off the `enabledCount` prop and the pipeline length', () => {
+    // The header reads `enabledCount` directly, not a count it derives itself
+    // — so this pins that the prop reaches the header verbatim, independent of
+    // whatever `isEnabled` happens to report.
     const total = LEVEL_2_PIPELINE.length;
 
     expect(
-      ruleCountHeader(mountDrawer({ enabledRuleIds: ALL_RULE_IDS })).text(),
+      ruleCountHeader(mountDrawer({ enabledCount: total })).text(),
     ).toBe(`${total} of ${total} on`);
     expect(
-      ruleCountHeader(mountDrawer({ enabledRuleIds: SOME_RULE_IDS })).text(),
+      ruleCountHeader(mountDrawer({ enabledCount: SOME_RULE_IDS.length })).text(),
     ).toBe(`${SOME_RULE_IDS.length} of ${total} on`);
-    expect(ruleCountHeader(mountDrawer({ enabledRuleIds: [] })).text()).toBe(
+    expect(ruleCountHeader(mountDrawer({ enabledCount: 0 })).text()).toBe(
       `0 of ${total} on`,
     );
   });
