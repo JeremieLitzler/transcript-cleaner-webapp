@@ -18,6 +18,11 @@ run-name: >-
 #     is allowed from any branch since it writes nothing.
 # There is no target branch and no `develop` > `main` pull request any more.
 #
+# The publish job guards itself before running release.sh (issues #63, #64):
+# it refuses a `release/*` ref that `develop` does not contain, and if an
+# earlier run left an orphaned tag on the remote (pushed, but no release) it
+# deletes that tag so a re-push re-cuts the release cleanly instead of dying.
+#
 # Note: GitHub only exposes `workflow_dispatch` once this file is on the repo's
 # default branch (see issue #60). Until then, use the `release/*` push path.
 #
@@ -157,6 +162,50 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+      - name: Verify the release ref is on develop
+        # #64: release.sh tags the HEAD of whatever ref was pushed, and nothing
+        # else checks that ref is contained in develop. A commit added on
+        # release/<date> before the push — a bump, a note, a hotfix — would put
+        # the tag on a commit develop does not carry, and `git describe` on
+        # develop would stop seeing it: the tag/version drift #54 removed. A
+        # manual publish dispatch from develop passes this trivially.
+        shell: bash
+        run: |
+          git fetch origin develop --quiet
+          if ! git merge-base --is-ancestor HEAD origin/develop; then
+            echo "::error::release ref $(git rev-parse --short HEAD) is not contained in origin/develop — rebase or re-cut release/<date> off develop"
+            exit 1
+          fi
+
+      - name: Reset a half-published release
+        # #63: release.sh pushes the tag, then creates the GitHub release. If an
+        # earlier run died between the two, the tag is on the remote with no
+        # release, and a plain re-push of release/<date> just dies inside
+        # release.sh — the orphaned tag now sits on HEAD, so its commit range is
+        # empty (or, with later commits, the recomputed tag "already exists
+        # locally"), both before the release step is reached. Delete that tag so
+        # the publish step below re-cuts it cleanly, release.sh notes and all.
+        # #63 lists deleting the tag as an accepted recovery; this automates it,
+        # for the plain re-push where the orphaned tag sits on HEAD.
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          git fetch --tags --quiet origin
+          # release.sh only ever creates annotated vMAJOR.MINOR.PATCH tags.
+          tag=$(git tag --points-at HEAD --list 'v[0-9]*.[0-9]*.[0-9]*' | sort -V | tail -n1)
+          if [[ -z $tag ]]; then
+            echo "No release tag on this commit — nothing to reset."
+            exit 0
+          fi
+          if gh release view "$tag" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            echo "::notice::release $tag already exists for this commit; the publish step will find nothing to release"
+            exit 0
+          fi
+          echo "Tag $tag is pushed with no release attached — deleting it so the release is re-cut."
+          git push origin ":refs/tags/$tag"
+          git tag -d "$tag"
 
       - name: Publish the release
         shell: bash
