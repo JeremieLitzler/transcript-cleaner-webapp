@@ -5,7 +5,8 @@ import App from '../src/App.vue';
 /**
  * `App.vue` — the wiring between the toolbar, the rules drawer and the
  * `useTranscriptStages` / `useRuleSelection` composables (issues #24, #40,
- * #41, #44), and the copy buttons it places in two of the panes (issue #76).
+ * #41, #44), and the copy buttons it places in two of the panes (issues #76,
+ * #77).
  *
  * The stage gate, the stale propagation and the clearing are
  * `useTranscriptStages`'s behaviour, pinned in `use-transcript-stages.test.ts`.
@@ -428,9 +429,9 @@ describe('the App landmarks', () => {
 });
 
 describe('the App copy buttons', () => {
-  // Issue #76 pins the whole copy behaviour at this seam, not in a
+  // Issues #76 and #77 pin the whole copy behaviour at this seam, not in a
   // `CopyButton` suite: which text a button copies is what `App.vue` wires
-  // in. The success path uses happy-dom's real clipboard, read back.
+  // in. Success uses happy-dom's real clipboard, read back; a refusal is a spy.
   /** A pane's copy button; `exists()` is false on a pane without one. */
   function copyButton(wrapper: Wrapper, title: string) {
     return pane(wrapper, title).find('header button');
@@ -458,7 +459,10 @@ describe('the App copy buttons', () => {
 
   // happy-dom's clipboard outlives a test; a leftover could pass a read-back.
   beforeEach(() => navigator.clipboard.writeText(''));
-  afterEach(() => vi.useRealTimers());
+  afterEach(() => {
+    vi.useRealTimers();
+    vi.restoreAllMocks();
+  });
 
   it('puts a Copy button in the reflowed and cleaned pane headers, and none in the raw pane', () => {
     // Copy takes a stage's result; the raw transcript is the input.
@@ -662,5 +666,126 @@ A later thought.`);
         'focus-visible:outline-accent',
       ]),
     );
+  });
+
+  describe('when the browser refuses the write', () => {
+    // Issue #77. happy-dom grants every permission, so a refusal is made on
+    // purpose; the spy is the only test-only thing, and `afterEach` restores it.
+
+    /** What a browser rejects `writeText` with when it refuses the write. */
+    function refusal() {
+      return new DOMException('Denied', 'NotAllowedError');
+    }
+
+    /** Refuse every write until `afterEach` restores the real clipboard. */
+    function refuse() {
+      return vi
+        .spyOn(navigator.clipboard, 'writeText')
+        .mockRejectedValue(refusal());
+    }
+
+    it('says "Copy failed" on the label and in the live region, and nowhere else', async () => {
+      const wrapper = await mountReflowed();
+      refuse();
+
+      await copy(wrapper, 'Reflowed transcript');
+
+      expect(copyLabel(wrapper, 'Reflowed transcript')).toBe('Copy failed');
+      expect(liveRegion(wrapper, 'Reflowed transcript').text()).toBe(
+        'Copy failed',
+      );
+      // Once on the label, once in the live region.
+      expect(wrapper.html().match(/Copy failed/g)).toHaveLength(2);
+    });
+
+    it('keeps "Copy failed" well past the 1500 ms that "Copied" gets', async () => {
+      // A failure is silent everywhere else, so it waits for the user (Q7).
+      vi.useFakeTimers();
+      const wrapper = await mountReflowed();
+      refuse();
+
+      await copy(wrapper, 'Reflowed transcript');
+      await vi.advanceTimersByTimeAsync(1500);
+      expect(copyLabel(wrapper, 'Reflowed transcript')).toBe('Copy failed');
+
+      await vi.advanceTimersByTimeAsync(60_000);
+      expect(copyLabel(wrapper, 'Reflowed transcript')).toBe('Copy failed');
+    });
+
+    it('is not cleared by the reset of an earlier success', async () => {
+      vi.useFakeTimers();
+      const wrapper = await mountReflowed();
+
+      await copy(wrapper, 'Reflowed transcript');
+      await vi.advanceTimersByTimeAsync(1000);
+      refuse();
+      await copy(wrapper, 'Reflowed transcript');
+      await vi.advanceTimersByTimeAsync(1500);
+
+      expect(copyLabel(wrapper, 'Reflowed transcript')).toBe('Copy failed');
+    });
+
+    it('clears as soon as the next attempt starts', async () => {
+      // Clearing first also lets a second refusal be announced afresh.
+      const wrapper = await mountReflowed();
+      const writeText = refuse();
+      await copy(wrapper, 'Reflowed transcript');
+      expect(copyLabel(wrapper, 'Reflowed transcript')).toBe('Copy failed');
+
+      // The retry's write stays pending until the test refuses it.
+      let refuseRetry: (reason: unknown) => void = () => {};
+      writeText.mockImplementationOnce(
+        () => new Promise<void>((_, reject) => (refuseRetry = reject)),
+      );
+      await copyButton(wrapper, 'Reflowed transcript').trigger('click');
+      expect(copyLabel(wrapper, 'Reflowed transcript')).toBe('Copy');
+      expect(liveRegion(wrapper, 'Reflowed transcript').text()).toBe('');
+
+      refuseRetry(refusal());
+      await flushPromises();
+      expect(liveRegion(wrapper, 'Reflowed transcript').text()).toBe(
+        'Copy failed',
+      );
+    });
+
+    it('gives way to "Copied" on a successful retry, which resets as usual', async () => {
+      vi.useFakeTimers();
+      const wrapper = await mountReflowed();
+      // Refused once, then the spy falls through to happy-dom's real clipboard.
+      vi.spyOn(navigator.clipboard, 'writeText')
+        .mockRejectedValueOnce(refusal());
+
+      await copy(wrapper, 'Reflowed transcript');
+      expect(copyLabel(wrapper, 'Reflowed transcript')).toBe('Copy failed');
+
+      await copy(wrapper, 'Reflowed transcript');
+      expect(copyLabel(wrapper, 'Reflowed transcript')).toBe('Copied');
+      expect(await navigator.clipboard.readText()).toBe(REFLOWED);
+
+      await vi.advanceTimersByTimeAsync(1500);
+      expect(copyLabel(wrapper, 'Reflowed transcript')).toBe('Copy');
+    });
+
+    it('clears when the pane text changes', async () => {
+      const wrapper = await mountReflowed();
+      refuse();
+      await copy(wrapper, 'Reflowed transcript');
+
+      await typeInto(wrapper, 'Reflowed transcript', 'A hand-repaired paragraph.');
+
+      expect(copyLabel(wrapper, 'Reflowed transcript')).toBe('Copy');
+      expect(liveRegion(wrapper, 'Reflowed transcript').text()).toBe('');
+    });
+
+    it('never changes the status badge', async () => {
+      const wrapper = await mountCleaned();
+      refuse();
+
+      await copy(wrapper, 'Reflowed transcript');
+      await copy(wrapper, 'Cleaned transcript');
+
+      expect(badge(wrapper, 'Reflowed transcript')).toBe('current');
+      expect(badge(wrapper, 'Cleaned transcript')).toBe('current');
+    });
   });
 });
