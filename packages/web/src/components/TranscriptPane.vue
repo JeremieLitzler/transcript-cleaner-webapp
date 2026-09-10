@@ -44,8 +44,12 @@ const model = defineModel<string>({ required: true });
  * The subtitle is a slot so a pane can put a link in it. Filling the slot
  * replaces the `sub` prop entirely; the styling stays on the wrapping span so
  * slot content cannot drift from the plain-string panes.
+ *
+ * `actions` holds the header's controls, after the badge. It is named for the
+ * role rather than for the copy button, because the download is scheduled to
+ * join it (grilling `docs/grillings/2026-09-10-copy-to-clipboard/`, Q14).
  */
-defineSlots<{ sub?: () => unknown }>();
+defineSlots<{ sub?: () => unknown; actions?: () => unknown }>();
 
 /**
  * The `status` > badge mapping. Text and variant per value are the design's,
@@ -78,9 +82,14 @@ const badge = computed(() => BADGE_BY_STATUS[props.status]);
       <span class="text-[11px] text-muted">
         <slot name="sub">{{ sub }}</slot>
       </span>
-      <span v-if="badge" class="badge ml-auto" :class="badge.variant">{{
-        badge.text
-      }}</span>
+      <!-- `ml-auto` opens the right-hand group rather than sitting on the
+           badge, so an action stays far right on a pane showing no badge. -->
+      <div class="ml-auto flex items-center gap-2">
+        <span v-if="badge" class="badge" :class="badge.variant">{{
+          badge.text
+        }}</span>
+        <slot name="actions" />
+      </div>
     </header>
 
     <textarea

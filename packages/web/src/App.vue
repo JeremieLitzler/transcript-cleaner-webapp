@@ -2,6 +2,7 @@
 import { ref } from 'vue';
 import { LEVEL_2_PIPELINE, type RuleId } from '@transcript-cleaner/rules';
 import TranscriptPane from './components/TranscriptPane.vue';
+import CopyButton from './components/CopyButton.vue';
 import RulesDrawer from './components/RulesDrawer.vue';
 import { useTranscriptStages } from './composables/useTranscriptStages';
 import { useRuleSelection } from './composables/useRuleSelection';
@@ -19,7 +20,7 @@ import { useRuleSelection } from './composables/useRuleSelection';
  * the two composables, which is why `pickPreset` / `toggleRule` below also
  * call `markCleanedStale`.
  *
- * Still to come, each its own piece of work: the `.txt` drop (Q25), copy and
+ * Still to come, each its own piece of work: the `.txt` drop (Q25), the
  * download (Q6), and the per-rule fire counts the prototype showed (issue #8).
  */
 
@@ -120,14 +121,22 @@ function toggleRule(id: RuleId) {
         :model-value="reflowed"
         :status="reflowedStatus"
         @update:model-value="editReflowed"
-      />
+      >
+        <template #actions>
+          <CopyButton :source="reflowed" label="Copy reflowed transcript" />
+        </template>
+      </TranscriptPane>
       <TranscriptPane
         title="Cleaned transcript"
         sub="level 2 · read-only"
         :model-value="cleaned"
         readonly
         :status="cleanedStatus"
-      />
+      >
+        <template #actions>
+          <CopyButton :source="cleaned" label="Copy cleaned transcript" />
+        </template>
+      </TranscriptPane>
     </main>
 
     <RulesDrawer

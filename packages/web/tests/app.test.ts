@@ -1,11 +1,11 @@
-import { type DOMWrapper, mount } from '@vue/test-utils';
-import { describe, expect, it } from 'vitest';
+import { type DOMWrapper, flushPromises, mount } from '@vue/test-utils';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import App from '../src/App.vue';
 
 /**
  * `App.vue` — the wiring between the toolbar, the rules drawer and the
  * `useTranscriptStages` / `useRuleSelection` composables (issues #24, #40,
- * #41, #44).
+ * #41, #44), and the copy buttons it places in two of the panes (issue #76).
  *
  * The stage gate, the stale propagation and the clearing are
  * `useTranscriptStages`'s behaviour, pinned in `use-transcript-stages.test.ts`.
@@ -424,5 +424,243 @@ describe('the App landmarks', () => {
 
     expect(skipLink.attributes('href')).toBe('#main-content');
     expect(wrapper.get('#main-content').element.tagName).toBe('MAIN');
+  });
+});
+
+describe('the App copy buttons', () => {
+  // Issue #76 pins the whole copy behaviour at this seam, not in a
+  // `CopyButton` suite: which text a button copies is what `App.vue` wires
+  // in. The success path uses happy-dom's real clipboard, read back.
+  /** A pane's copy button; `exists()` is false on a pane without one. */
+  function copyButton(wrapper: Wrapper, title: string) {
+    return pane(wrapper, title).find('header button');
+  }
+
+  /** The button's visible label, which swaps while its name stays put. */
+  function copyLabel(wrapper: Wrapper, title: string): string {
+    return copyButton(wrapper, title).text();
+  }
+
+  function copyDisabled(wrapper: Wrapper, title: string): boolean {
+    return copyButton(wrapper, title).attributes('disabled') !== undefined;
+  }
+
+  /** The pane's copy announcement region, which must exist before it speaks. */
+  function liveRegion(wrapper: Wrapper, title: string) {
+    return pane(wrapper, title).get('header [aria-live="polite"]');
+  }
+
+  /** `writeText` is async, so the label only changes once it has settled. */
+  async function copy(wrapper: Wrapper, title: string) {
+    await copyButton(wrapper, title).trigger('click');
+    await flushPromises();
+  }
+
+  // happy-dom's clipboard outlives a test; a leftover could pass a read-back.
+  beforeEach(() => navigator.clipboard.writeText(''));
+  afterEach(() => vi.useRealTimers());
+
+  it('puts a Copy button in the reflowed and cleaned pane headers, and none in the raw pane', () => {
+    // Copy takes a stage's result; the raw transcript is the input.
+    const wrapper = mountApp();
+
+    expect(copyButton(wrapper, 'Raw transcript').exists()).toBe(false);
+    expect(copyLabel(wrapper, 'Reflowed transcript')).toBe('Copy');
+    expect(copyLabel(wrapper, 'Cleaned transcript')).toBe('Copy');
+  });
+
+  it('disables both buttons before any stage has run', () => {
+    const wrapper = mountApp();
+
+    expect(copyDisabled(wrapper, 'Reflowed transcript')).toBe(true);
+    expect(copyDisabled(wrapper, 'Cleaned transcript')).toBe(true);
+  });
+
+  it('enables the reflowed button once level 1 has run, and keeps the cleaned one disabled until level 2 has', async () => {
+    const wrapper = await mountReflowed();
+
+    expect(copyDisabled(wrapper, 'Reflowed transcript')).toBe(false);
+    expect(copyDisabled(wrapper, 'Cleaned transcript')).toBe(true);
+
+    await button(wrapper, 'Apply rules').trigger('click');
+
+    expect(copyDisabled(wrapper, 'Cleaned transcript')).toBe(false);
+  });
+
+  it('keeps a stale pane copyable', async () => {
+    // Q13b keeps stale text on screen because it is the only copy the user
+    // has until they re-run; refusing to let it be taken would defeat that.
+    const wrapper = await mountCleaned();
+    await typeInto(wrapper, 'Raw transcript', `${RAW}
+A later thought.`);
+    await typeInto(wrapper, 'Reflowed transcript', 'A hand-repaired paragraph.');
+    await typeInto(wrapper, 'Raw transcript', `${RAW}
+Yet another thought.`);
+
+    expect(badge(wrapper, 'Reflowed transcript')).toBe('stale — re-run');
+    expect(badge(wrapper, 'Cleaned transcript')).toBe('stale — re-run');
+    expect(copyDisabled(wrapper, 'Reflowed transcript')).toBe(false);
+    expect(copyDisabled(wrapper, 'Cleaned transcript')).toBe(false);
+  });
+
+  it('disables the reflowed button again once that pane is emptied by hand', async () => {
+    const wrapper = await mountReflowed();
+
+    await typeInto(wrapper, 'Reflowed transcript', '');
+
+    expect(copyDisabled(wrapper, 'Reflowed transcript')).toBe(true);
+  });
+
+  it('names each button after its pane', () => {
+    // Two buttons both called "Copy" are indistinguishable to a screen reader,
+    // so each carries its pane in its name, as the textarea already does.
+    const wrapper = mountApp();
+
+    expect(
+      copyButton(wrapper, 'Reflowed transcript').attributes('aria-label'),
+    ).toBe('Copy reflowed transcript');
+    expect(
+      copyButton(wrapper, 'Cleaned transcript').attributes('aria-label'),
+    ).toBe('Copy cleaned transcript');
+  });
+
+  it('sits in the right-hand group of the pane header, after the status badge', async () => {
+    // The badge is a readout and the button a control; the control comes last.
+    const wrapper = await mountCleaned();
+
+    for (const title of ['Reflowed transcript', 'Cleaned transcript']) {
+      const group = pane(wrapper, title).get('header .ml-auto');
+      const badgeElement = group.get('.badge').element;
+      const buttonElement = group.get('button').element;
+
+      expect(
+        badgeElement.compareDocumentPosition(buttonElement) &
+          Node.DOCUMENT_POSITION_FOLLOWING,
+      ).toBeTruthy();
+    }
+  });
+
+  it('puts the exact text of each pane on the clipboard', async () => {
+    const wrapper = await mountCleaned();
+
+    await copy(wrapper, 'Reflowed transcript');
+    expect(await navigator.clipboard.readText()).toBe(REFLOWED);
+
+    await copy(wrapper, 'Cleaned transcript');
+    expect(await navigator.clipboard.readText()).toBe(CLEANED);
+  });
+
+  it('copies a hand edit in the reflowed pane as it stands', async () => {
+    // The reflowed pane is the repair point (Q13b), so what is on screen is
+    // what leaves — not a fresh level-1 run.
+    const wrapper = await mountReflowed();
+    const edited = `${REFLOWED}
+
+A hand-added paragraph.  `;
+    await typeInto(wrapper, 'Reflowed transcript', edited);
+
+    await copy(wrapper, 'Reflowed transcript');
+
+    expect(await navigator.clipboard.readText()).toBe(edited);
+  });
+
+  it('confirms a copy on its own label for 1500 ms, then reverts', async () => {
+    vi.useFakeTimers();
+    const wrapper = await mountReflowed();
+
+    await copy(wrapper, 'Reflowed transcript');
+    expect(copyLabel(wrapper, 'Reflowed transcript')).toBe('Copied');
+
+    await vi.advanceTimersByTimeAsync(1499);
+    expect(copyLabel(wrapper, 'Reflowed transcript')).toBe('Copied');
+
+    await vi.advanceTimersByTimeAsync(1);
+    expect(copyLabel(wrapper, 'Reflowed transcript')).toBe('Copy');
+  });
+
+  it('restarts the full 1500 ms when a second copy lands before the first expires', async () => {
+    vi.useFakeTimers();
+    const wrapper = await mountReflowed();
+
+    await copy(wrapper, 'Reflowed transcript');
+    await vi.advanceTimersByTimeAsync(1000);
+    await copy(wrapper, 'Reflowed transcript');
+
+    await vi.advanceTimersByTimeAsync(1499);
+    expect(copyLabel(wrapper, 'Reflowed transcript')).toBe('Copied');
+
+    await vi.advanceTimersByTimeAsync(1);
+    expect(copyLabel(wrapper, 'Reflowed transcript')).toBe('Copy');
+  });
+
+  it('keeps the accessible name while the visible label swaps', async () => {
+    // "Copied" is status, not name; the live region is what announces it.
+    const wrapper = await mountReflowed();
+
+    await copy(wrapper, 'Reflowed transcript');
+
+    expect(copyLabel(wrapper, 'Reflowed transcript')).toBe('Copied');
+    expect(
+      copyButton(wrapper, 'Reflowed transcript').attributes('aria-label'),
+    ).toBe('Copy reflowed transcript');
+  });
+
+  it('never changes the status badge', async () => {
+    // A copy is not a pane state; the badge stays the composable's alone.
+    const wrapper = await mountCleaned();
+
+    await copy(wrapper, 'Reflowed transcript');
+    await copy(wrapper, 'Cleaned transcript');
+
+    expect(badge(wrapper, 'Reflowed transcript')).toBe('current');
+    expect(badge(wrapper, 'Cleaned transcript')).toBe('current');
+
+    await typeInto(wrapper, 'Raw transcript', `${RAW}
+A later thought.`);
+    await copy(wrapper, 'Reflowed transcript');
+    await copy(wrapper, 'Cleaned transcript');
+
+    expect(badge(wrapper, 'Reflowed transcript')).toBe('stale — re-run');
+    expect(badge(wrapper, 'Cleaned transcript')).toBe('stale — re-run');
+  });
+
+  it('keeps a visually-hidden live region in both panes, empty at rest', () => {
+    // Rendered before it has anything to say: a region that appears together
+    // with its text is not reliably announced.
+    const wrapper = mountApp();
+
+    for (const title of ['Reflowed transcript', 'Cleaned transcript']) {
+      const region = liveRegion(wrapper, title);
+      expect(region.text()).toBe('');
+      expect(region.classes()).toContain('sr-only');
+    }
+  });
+
+  it('announces "Copied" in the live region, and clears it with the label', async () => {
+    vi.useFakeTimers();
+    const wrapper = await mountCleaned();
+
+    await copy(wrapper, 'Cleaned transcript');
+    expect(liveRegion(wrapper, 'Cleaned transcript').text()).toBe('Copied');
+    expect(liveRegion(wrapper, 'Reflowed transcript').text()).toBe('');
+
+    await vi.advanceTimersByTimeAsync(1500);
+    expect(liveRegion(wrapper, 'Cleaned transcript').text()).toBe('');
+  });
+
+  it('uses the pane-control shape and the focus-visible outline of the header link', () => {
+    // `.btn-pane` carries the rectangle and the min-width that fits "Copy
+    // failed"; the outline utilities match the Vibe link's (issue #33).
+    const classes = copyButton(mountApp(), 'Reflowed transcript').classes();
+
+    expect(classes).toContain('btn-pane');
+    expect(classes).toEqual(
+      expect.arrayContaining([
+        'focus-visible:outline',
+        'focus-visible:outline-2',
+        'focus-visible:outline-offset-2',
+        'focus-visible:outline-accent',
+      ]),
+    );
   });
 });
