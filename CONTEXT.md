@@ -27,6 +27,10 @@ Level 2 only operates correctly on output that level 1 has produced. That orderi
 
 A **preset** is a named set of level-2 rules with a default on/off state for each. Level 1 has nothing to configure, so presets apply to level 2 alone. v1 ships two: **COGE (English)** and **Universal (any language)** — see _Presets shipped_ below.
 
+## Pane
+
+A **pane** is one of the three side-by-side views, one per artefact: the raw pane, the reflowed pane, the cleaned pane. It is the word in code (`TranscriptPane`, `PaneStatus`), in docs and in conversation. _Avoid_: panel.
+
 ## Pane status
 
 Each of the three panes reports one **`PaneStatus`** — the single value that drives its badge and its dimmed / greyed treatment. `useTranscriptStages` computes it per pane (`rawStatus`, `reflowedStatus`, `cleanedStatus`); `TranscriptPane` renders it and derives no state of its own. The precedence, applied once in the composable, is `locked` > `stale` > `current` > `none`.
@@ -45,7 +49,7 @@ Each of the three panes reports one **`PaneStatus`** — the single value that d
 - **Language** — Level 1 any language. Level 2 is English-only **by default preset, not by construction** (amended by Q26): eight of its eleven rules key on English literals and cannot fire on other languages, but rules 3, 5 and 9 are language-agnostic and correct anywhere. _(Q3, Q3b, Q26)_
 - **Rule 7 (LLM)** — Out of scope for v1. Postponed, not cancelled. _(Q4)_
 - **Presentation** — Side-by-side input and output. _(Q5)_
-- **Export** — Copy to clipboard **and** download `.txt`. _(Q6)_
+- **Export** — Copy to clipboard **and** download `.txt` — the copy half settled, the download half still open and ungrilled (amended by the copy-to-clipboard grilling). Copy is a button in the header of the **reflowed and cleaned panes only**: it takes a stage's result, and the raw transcript is the input, not a result. It is enabled whenever the pane holds text, so a `stale` pane is copyable — Q13b keeps that text on screen because it is the only copy the user has, and refusing to let it be taken would make keeping it pointless. Success and failure are reported on the button's own label and never on the status badge, because a copy is not a pane state; a failure stays shown until the next attempt, since it is silent everywhere else. The header slot it sits in is generic rather than named after the copy, because the download button is scheduled to join it. `@vueuse/core` arrived with it — adopted for the `.txt` drop, not for this button; see `docs/adr/0001-vueuse-as-browser-api-toolkit.md`. _(Q6, grilling `docs/grillings/2026-09-10-copy-to-clipboard/`)_
 - **Python scripts** — Ported to the webapp; `original-scripts/` frozen as provenance. _(Q7)_
 - **Spec vs. code** — Port the code's behaviour; every divergence recorded as an issue. _(Q8)_
 - **Other script copy** — `coge-transcriptions/transcripts-processing/` stays as it is. _(Q9)_
@@ -96,6 +100,7 @@ Each of the three panes reports one **`PaneStatus`** — the single value that d
 | `packages/rules/tests/golden-transcripts/`    | Real before/after pairs. Verified byte-identical to the Python's output.                                         |
 | `packages/rules/tests/hand-written-examples/` | One case per rule and per divergence, in isolation.                                                              |
 | `docs/grillings/`                             | The grillings, one directory per session, one file per round.                                                    |
+| `docs/adr/`                                   | Architecture decision records, one numbered file per decision.                                                   |
 | `.github/workflows/`                          | Both pipelines: `pr-build.yml` checks every pull request, `release-bash.yml` previews and publishes releases.     |
 | `scripts/release/`                            | The vendored `release.sh` and its provenance. An unmodified upstream copy — read `VENDORED.md` before touching it. |
 | `netlify.toml`                                | The build contract for the deploy. The trigger lives in Netlify's Git integration, not in this repo.             |
