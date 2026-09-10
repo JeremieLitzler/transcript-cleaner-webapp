@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue';
+import { computed, ref, watch } from 'vue';
 import { useTimeoutFn } from '@vueuse/core';
 
 /**
@@ -24,23 +24,44 @@ const props = defineProps<{
   label: string;
 }>();
 
-const copied = ref(false);
+type Outcome = 'copied' | 'failed';
+
+/** `null` at rest: before any attempt, after the reset, or once a failure clears. */
+const outcome = ref<Outcome | null>(null);
 
 // `start()` clears a running timer first, so a second copy restarts the full 1500 ms.
-const reset = useTimeoutFn(() => (copied.value = false), 1500, {
+const reset = useTimeoutFn(() => (outcome.value = null), 1500, {
   immediate: false,
 });
 
+// A failure has no timer (issue #77); editing the text is one way the user clears it.
+watch(() => props.source, clearFailure);
+
+const ANNOUNCEMENT_BY_OUTCOME: Record<Outcome, string> = {
+  copied: 'Copied',
+  failed: 'Copy failed',
+};
+
 // One source for the label and the live region, so the two cannot drift apart.
-const announcement = computed(() => (copied.value ? 'Copied' : ''));
+const announcement = computed(() =>
+  outcome.value ? ANNOUNCEMENT_BY_OUTCOME[outcome.value] : '',
+);
+
+function clearFailure() {
+  if (outcome.value === 'failed') outcome.value = null;
+}
 
 async function copy() {
+  // The next attempt clears a failure whatever its own outcome (issue #77).
+  clearFailure();
   try {
     await navigator.clipboard.writeText(props.source);
-    copied.value = true;
+    outcome.value = 'copied';
     reset.start();
   } catch {
-    // A refused write is reported by issue #77, which lands with this one.
+    // Stopped, or an earlier success's timer would clear the failure early.
+    reset.stop();
+    outcome.value = 'failed';
   }
 }
 </script>
