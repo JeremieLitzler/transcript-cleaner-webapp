@@ -27,6 +27,6 @@ See `docs/agents/coding-standards.md`.
 
 ### CI and releases
 
-`release.sh` is vendored — pipeline changes wrap it in `release-bash.yml`.
+`release.sh` is downloaded at a pinned SHA — pipeline changes wrap it in `release.yml`.
 Releases are cut by pushing a `release/<date>` branch, not a PR.
 See `docs/agents/ci.md`.
