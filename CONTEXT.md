@@ -35,12 +35,12 @@ A **pane** is one of the three side-by-side views, one per artefact: the raw pan
 
 Each of the three panes reports one **`PaneStatus`** — the single value that drives its badge and its dimmed / greyed treatment. `useTranscriptStages` computes it per pane (`rawStatus`, `reflowedStatus`, `cleanedStatus`); `TranscriptPane` renders it and derives no state of its own. The precedence, applied once in the composable, is `locked` > `stale` > `current` > `none`.
 
-| Value         | What it means                                                                                                        | Reached by                                                                                                        |
-| ------------- | ------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------- |
-| **`locked`**  | The stage has never produced this pane's content. Shown dimmed.                                                     | `reflowed` (level 1 has not run), `cleaned` (level 2 has not run)                                              |
-| **`stale`**   | Something upstream changed since this content was produced. It is kept, not cleared, and the badge asks for a re-run. | `reflowed` (raw edited since the reflow), `cleaned` (reflowed pane or rule set changed since the clean)        |
-| **`current`** | The content matches its inputs.                                                                                    | all three panes                                                                                               |
-| **`none`**    | The pane is blank and that is not an error — no badge.                                                              | `raw` (empty), `reflowed` (emptied by hand after a run). Never `cleaned` — for that pane emptiness _is_ `locked`. |
+| Value         | What it means                                                                                                         | Reached by                                                                                                        |
+| ------------- | --------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------- |
+| **`locked`**  | The stage has never produced this pane's content. Shown dimmed.                                                       | `reflowed` (level 1 has not run), `cleaned` (level 2 has not run)                                                 |
+| **`stale`**   | Something upstream changed since this content was produced. It is kept, not cleared, and the badge asks for a re-run. | `reflowed` (raw edited since the reflow), `cleaned` (reflowed pane or rule set changed since the clean)           |
+| **`current`** | The content matches its inputs.                                                                                       | all three panes                                                                                                   |
+| **`none`**    | The pane is blank and that is not an error — no badge.                                                                | `raw` (empty), `reflowed` (emptied by hand after a run). Never `cleaned` — for that pane emptiness _is_ `locked`. |
 
 ## Settled scope for v1
 
@@ -88,21 +88,21 @@ Each of the three panes reports one **`PaneStatus`** — the single value that d
 
 ## Where things live
 
-| Path                                          | What it holds                                                                                                    |
-| --------------------------------------------- | ---------------------------------------------------------------------------------------------------------------- |
+| Path                                          | What it holds                                                                                                     |
+| --------------------------------------------- | ----------------------------------------------------------------------------------------------------------------- |
 | `packages/rules/src/`                         | The pipeline. No dependencies, no Vue, no DOM. Level 1, the eleven level-2 rules, the presets.                    |
 | `packages/rules/src/python-strings.ts`        | Python string semantics JavaScript does not share. Each function is measured against CPython, not read from docs. |
-| `packages/rules/tests/harness/`               | The parser that turns the hand-written examples markdown into tests.                                             |
-| `packages/web/`                               | The Vue app. Imports `packages/rules`; the dependency never runs the other way.                                  |
+| `packages/rules/tests/harness/`               | The parser that turns the hand-written examples markdown into tests.                                              |
+| `packages/web/`                               | The Vue app. Imports `packages/rules`; the dependency never runs the other way.                                   |
 | `packages/web/tests/`                         | The component suite, run by `packages/web/vitest.config.ts`. Mounts components under `happy-dom`.                 |
-| `original-scripts/`                           | The Python being ported. Frozen as provenance (Q7).                                                              |
-| `docs/port-divergences.md`                    | Every place the code and the spec disagree, each with a measured example and a disposition. The complete record. |
-| `packages/rules/tests/golden-transcripts/`    | Real before/after pairs. Verified byte-identical to the Python's output.                                         |
-| `packages/rules/tests/hand-written-examples/` | One case per rule and per divergence, in isolation.                                                              |
-| `docs/grillings/`                             | The grillings, one directory per session, one file per round.                                                    |
-| `docs/adr/`                                   | Architecture decision records, one numbered file per decision.                                                   |
-| `.github/workflows/`                          | Both pipelines: `pr-build.yml` checks every pull request, `release.yml` previews and publishes releases.     |
-| `netlify.toml`                                | The build contract for the deploy. The trigger lives in Netlify's Git integration, not in this repo.             |
+| `original-scripts/`                           | The Python being ported. Frozen as provenance (Q7).                                                               |
+| `docs/port-divergences.md`                    | Every place the code and the spec disagree, each with a measured example and a disposition. The complete record.  |
+| `packages/rules/tests/golden-transcripts/`    | Real before/after pairs. Verified byte-identical to the Python's output.                                          |
+| `packages/rules/tests/hand-written-examples/` | One case per rule and per divergence, in isolation.                                                               |
+| `docs/grillings/`                             | The grillings, one directory per session, one file per round.                                                     |
+| `docs/adr/`                                   | Architecture decision records, one numbered file per decision.                                                    |
+| `.github/workflows/`                          | Both pipelines: `pr-build.yml` checks every pull request, `release.yml` previews and publishes releases.          |
+| `netlify.toml`                                | The build contract for the deploy. The trigger lives in Netlify's Git integration, not in this repo.              |
 
 ## Reading the pipeline
 
