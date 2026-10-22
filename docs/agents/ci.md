@@ -4,9 +4,9 @@ Operational notes for working on `.github/workflows/`. The settled decisions and
 
 ## Changing the release pipeline
 
-`release.sh` is not in this repo: `release.yml` downloads it from `JeremieLitzler/semantic-release-script` at the SHA in `RELEASE_SCRIPT_REF` (tag `v1.0.0`), so a commit cannot change the script that releases it. To add or change pipeline behaviour — a guard, a preflight check, a recovery path — add a step or job in `release.yml`, around the script. To move the pin, follow the comment above `RELEASE_SCRIPT_REF`.
+`release.sh` is not in this repo: `release.yml` downloads it from `JeremieLitzler/semantic-release-script` at the SHA in `RELEASE_SCRIPT_REF` (tag `v1.0.0`), so a commit cannot change the script that releases it. To add or change pipeline behaviour — a guard, a preflight check, a recovery path — add a step or job in `release.yml`, around the script. To move the pin: take the SHA of the script repo's `main` or of a version tag (`git rev-parse 'vX.Y.Z^{commit}'`), set `RELEASE_SCRIPT_REF` to it, and merge; the next push to `develop` previews the pending release with the new script before anything is published.
 
-The publish job already wraps the script with two preflight guards: the pushed `release/*` ref must be contained in `origin/develop`, and an orphaned tag from a half-finished run is deleted so the release re-cuts. A `guard` job refuses any other ref, and a `test` job (`npm ci`, `npm audit signatures`, `npm run check`, `npm run build`) must pass before `publish` starts. A `deploy-site` job calls `NETLIFY_BUILD_HOOK` after a release is cut.
+The publish job already wraps the script with two preflight guards: the pushed `release/*` ref must be contained in `origin/develop`, and an orphaned tag from a half-finished run is deleted so the release re-cuts. A `guard` job refuses any other ref, and the `check` and `build` jobs (each `npm ci` and `npm audit signatures`, then `npm run check` or `npm run build`) must pass before `publish` starts. A `deploy-site` job calls `NETLIFY_BUILD_HOOK` after a release is cut.
 
 ## Cutting a release
 
@@ -16,7 +16,7 @@ The release branch is disposable: it carries nothing to merge back, and once the
 
 ## GITHUB_TOKEN and downstream workflows
 
-The publish job tags and releases with the default `GITHUB_TOKEN`, which by design does not trigger further workflow runs. Before adding a workflow that keys on `on: release` or `on: push: tags` (npm publish, a deploy, changelog sync), note that `release.yml`'s publish job uses the default token — it needs a GitHub App or PAT token restored for the release to be visible to that workflow.
+The publish job tags and releases with the default `GITHUB_TOKEN`, which by design does not trigger further workflow runs. Before adding a workflow that keys on `on: release` or `on: push: tags` (npm publish, a deploy, changelog sync), note that `release.yml`'s `publish` job authenticates with `GITHUB_TOKEN` — swap in a GitHub App or PAT token there for the release to be visible to that workflow.
 
 ## Rulesets
 

@@ -25,23 +25,23 @@ npm install
 
 **Run the app**
 
-| Command | What it does |
-| --- | --- |
-| `npm start` | The app in dev mode, with hot reload, on <http://localhost:5173>. Alias of `npm run dev`. |
-| `npm run dev` | The same thing, named the way Vite names it. |
+| Command           | What it does                                                                                     |
+| ----------------- | ------------------------------------------------------------------------------------------------ |
+| `npm start`       | The app in dev mode, with hot reload, on <http://localhost:5173>. Alias of `npm run dev`.        |
+| `npm run dev`     | The same thing, named the way Vite names it.                                                     |
 | `npm run preview` | Builds for production and serves the result on <http://localhost:4173>. What Netlify will serve. |
-| `npm run build` | Builds every package that has a build. Output in `packages/web/dist/`. |
+| `npm run build`   | Builds every package that has a build. Output in `packages/web/dist/`.                           |
 
 In dev the app imports `packages/rules` **from source**, so a change to a rule reloads the page without a build step.
 
 **Run the tests**
 
-| Command | What it does |
-| --- | --- |
-| `npm test` | The whole suite, once. |
-| `npm run test:watch` | The same suite, re-running on save. |
-| `npm run typecheck` | Both packages, `tsc` for the rules and `vue-tsc` for the app. |
-| `npm run check` | Typecheck then test — what to run before pushing. |
+| Command              | What it does                                                  |
+| -------------------- | ------------------------------------------------------------- |
+| `npm test`           | The whole suite, once.                                        |
+| `npm run test:watch` | The same suite, re-running on save.                           |
+| `npm run typecheck`  | Both packages, `tsc` for the rules and `vue-tsc` for the app. |
+| `npm run check`      | Typecheck then test — what to run before pushing.             |
 
 `npm test` runs two projects: the `rules` suite, whose fixtures it reads straight out of `packages/rules/tests/`, and the `web` suite in `packages/web/tests/`. The hand-written examples are parsed from markdown at run time, so a case is added by writing it in the markdown and nowhere else.
 
@@ -82,7 +82,7 @@ Dependabot opens weekly pull requests against `develop` for both the npm workspa
 | [`docs/grillings/`](docs/grillings/)                                                         | How the scope was decided, one file per round. Historical record — paths quoted inside are as they were at the time.             |
 | [`docs/prototypes/`](docs/prototypes/)                                                       | Throwaway UI prototypes. Open the `.html` in a browser; no build step.                                                           |
 | [`original-scripts/`](original-scripts/)                                                     | The Python being ported. Frozen as provenance.                                                                                   |
-| [`.github/workflows/`](.github/workflows/)                                                   | Both pipelines: `pr-build.yml` checks every pull request, `release.yml` previews and publishes releases.                    |
+| [`.github/workflows/`](.github/workflows/)                                                   | Both pipelines: `pr-build.yml` checks every pull request, `release.yml` previews and publishes releases.                         |
 
 ## Licence
 

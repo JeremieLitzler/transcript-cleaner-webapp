@@ -1,7 +1,6 @@
-# Introduced with the vendored release script (issue #13), which is authored and
-# committed from Windows but only ever runs on a Linux runner. A CRLF in the
-# shebang line makes the whole file unrunnable, and that failure is a repo
-# property, not a property of whoever's `core.autocrlf` happened to be set.
+# Shell scripts are authored on Windows but only ever run on a Linux runner. A
+# CRLF in the shebang line makes the whole file unrunnable, and that failure is a
+# repo property, not a property of whoever's `core.autocrlf` happened to be set.
 *.sh text eol=lf
 
 # The golden transcripts are byte-for-byte fixtures, and their line endings are
