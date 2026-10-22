@@ -29,4 +29,5 @@ See `docs/agents/coding-standards.md`.
 
 `release.sh` is downloaded at a pinned SHA — pipeline changes wrap it in `release.yml`.
 Releases are cut by pushing a `release/<date>` branch, not a PR.
+Production builds only from the Netlify build hook; deploy previews stay on the Git integration.
 See `docs/agents/ci.md`.

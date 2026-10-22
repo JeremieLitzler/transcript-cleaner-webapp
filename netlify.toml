@@ -1,16 +1,11 @@
-# The Git integration stays for deploy previews (Q16), which are what pay off for
-# a UI whose whole point is visual. Production is deployed by the release
-# workflow's `deploy-site` job calling the build hook, so a push to `develop`
-# never ships a build the release did not cut.
+# The Git integration stays for deploy previews (Q16); production is deployed by
+# the release workflow's build hook, so a push to `develop` never ships unreleased.
 #
 # Connecting the repository in Netlify's UI is a one-time manual step and is not
 # expressed here; this file is only the build contract once it is connected.
 
 [build]
-  # Exit 0 skips the build: a production build not started by the build hook.
-  # Deploy previews and branch deploys still build.
-  # https://docs.netlify.com/build/configure-builds/ignore-builds
-  # https://docs.netlify.com/build/configure-builds/environment-variables
+  # Exit 0 means skip (the inverse of shell habit): see https://docs.netlify.com/build/configure-builds/ignore-builds and https://docs.netlify.com/build/configure-builds/environment-variables
   ignore = "test \"$CONTEXT\" = production && test -z \"$INCOMING_HOOK_TITLE\""
   # The root script, not `vite build` directly: it runs `--workspaces`, so
   # `packages/rules` is typechecked on the way past rather than skipped.
