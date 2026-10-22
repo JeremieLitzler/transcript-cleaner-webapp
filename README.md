@@ -58,13 +58,14 @@ flowchart LR
   dev -.->|"branch off, push"| rel["release/DATE"]
   rel -->|push| pub["publish: release.sh --yes"]
   pub --> out["tag vX.Y.Z + GitHub release"]
+  pub --> site["deploy-site: Netlify build hook"]
 ```
 
 Every pull request into `develop` runs [`pr-build.yml`](.github/workflows/pr-build.yml): `npm ci`, `npm audit signatures`, `npm run check`, `npm run build`. It runs `check` rather than `test` because `npm run build` only typechecks `packages/web` — `packages/rules` has no build step, so its `tsc --noEmit` would otherwise never run in CI. Running `npm run check` locally before pushing therefore reproduces the whole gate.
 
 Releases come from conventional commits, read by `release.sh`, downloaded at a pinned SHA of [semantic-release-script](https://github.com/JeremieLitzler/semantic-release-script). Every push to `develop` runs [`release.yml`](.github/workflows/release.yml) in preview — a dry run that writes the version and notes a release would produce to the run summary. Pushing a `release/<date>` branch runs it for real: it tags that commit and publishes the GitHub release. Because the branch carries `develop`'s commits unchanged, the tag lands on a commit `develop` already has, so `git describe` on `develop` always sees the latest release. Commit subjects matter: `feat:` bumps the minor, `fix:` the patch, a `!` or a `BREAKING CHANGE:` footer the major, and anything else rides along without moving the number.
 
-Deploy is Netlify's own Git integration rather than a workflow — [`netlify.toml`](netlify.toml) holds the build contract, Netlify holds the trigger, which is what gives a deploy preview per pull request.
+Deploy previews come from Netlify's Git integration, one per pull request. Production is built only by the Netlify build hook, which the `deploy-site` job of `release.yml` calls after a release is cut; [`netlify.toml`](netlify.toml) holds the build contract and skips any production build the hook did not start.
 
 Dependabot opens weekly pull requests against `develop` for both the npm workspace and the action pins in `.github/workflows/`.
 
