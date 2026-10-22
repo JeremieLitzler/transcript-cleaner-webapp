@@ -78,7 +78,7 @@ Each of the three panes reports one **`PaneStatus`** — the single value that d
 - **CI** — A `PR Test & Build Check` workflow on every pull request into `develop`: `npm ci`, `npm audit signatures`, `npm run check`, `npm run build`. It runs `check` and not `test` because `npm run build` only typechecks `packages/web`; `packages/rules` has no build step, so its `tsc --noEmit` would otherwise never run in CI at all. _(issue #11, issue #55)_
 - **Dependency updates** — Dependabot, weekly, over both the npm workspace and the GitHub Actions pins, targeting `develop`. No `labels:` block: Dependabot applies `dependencies` on its own and creates that label if it is missing, whereas a label named in the config that does not exist is skipped silently. _(issue #12)_
 - **Deploy** — Netlify's own Git integration, not a GitHub Actions job. This is Q11b's "Netlify, static only" turned into a mechanism: `netlify.toml` holds the build contract, Netlify holds the trigger. Chosen because the integration gives a deploy preview per pull request for free, which is the part that pays off for a UI whose whole point is visual, and because the two options are alternatives — running both would give one deploy two sources of truth. _(Q11b, issue #13)_
-- **Releases** — Conventional commits, read by a vendored `scripts/release/release.sh` (pinned; provenance and setup in `scripts/release/VENDORED.md`). Every push to `develop` runs a dry-run preview to the run summary; pushing a `release/<date>` branch off `develop` tags that commit and publishes the GitHub release. No changelog is committed back — the GitHub release is the artefact. The publish job runs on the default `GITHUB_TOKEN` with `contents: write`; the GitHub App token it once needed to push a tag to a protected `main` is gone with `main` itself. _(issue #13, issues #54–#57, #59)_
+- **Releases** — Conventional commits, read by `release.sh` downloaded at a pinned SHA of `semantic-release-script` (tag `v1.0.0`; the pin and how to move it are in `release.yml`). Every push to `develop` runs a dry-run preview to the run summary; pushing a `release/<date>` branch off `develop` tags that commit and publishes the GitHub release. No changelog is committed back — the GitHub release is the artefact. The publish job runs on the default `GITHUB_TOKEN` with `contents: write`; the GitHub App token it once needed to push a tag to a protected `main` is gone with `main` itself. _(issue #13, issues #54–#57, #59)_
 
 ## Deferred to v2
 
@@ -101,8 +101,7 @@ Each of the three panes reports one **`PaneStatus`** — the single value that d
 | `packages/rules/tests/hand-written-examples/` | One case per rule and per divergence, in isolation.                                                              |
 | `docs/grillings/`                             | The grillings, one directory per session, one file per round.                                                    |
 | `docs/adr/`                                   | Architecture decision records, one numbered file per decision.                                                   |
-| `.github/workflows/`                          | Both pipelines: `pr-build.yml` checks every pull request, `release-bash.yml` previews and publishes releases.     |
-| `scripts/release/`                            | The vendored `release.sh` and its provenance. An unmodified upstream copy — read `VENDORED.md` before touching it. |
+| `.github/workflows/`                          | Both pipelines: `pr-build.yml` checks every pull request, `release.yml` previews and publishes releases.     |
 | `netlify.toml`                                | The build contract for the deploy. The trigger lives in Netlify's Git integration, not in this repo.             |
 
 ## Reading the pipeline
